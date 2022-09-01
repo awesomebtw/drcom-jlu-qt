@@ -7,25 +7,37 @@
 #include "dogcom.h"
 #include "interruptiblesleeper.h"
 
-class DogcomController : public QObject
-{
-	Q_OBJECT
+class DogcomController : public QObject {
+    Q_OBJECT
 public:
-	DogcomController();
-	virtual ~DogcomController();
-	void Login(const QString &account, const QString &password, const QString &mac);
-	void LogOut();
-public slots:
-	void HandleDogcomOffline(int reason);
-	void HandleDogcomOnline();
-	void HandleIpAddress(unsigned char x1, unsigned char x2, unsigned char x3, unsigned char x4);
-signals:
-	void HaveBeenOffline(int reason);
-	void HaveLoggedIn();
-	void HaveObtainedIp(const QString &ip);
+    DogcomController();
+
+    virtual ~DogcomController();
+
+    void Login(const QString &account, const QString &password, const QString &mac);
+
+    void LogOut();
+
+public
+    slots:
+            void HandleDogcomOffline(int
+    reason);
+
+    void HandleDogcomOnline();
+
+    void HandleIpAddress(unsigned char x1, unsigned char x2, unsigned char x3, unsigned char x4);
+
+    signals:
+            void HaveBeenOffline(int
+    reason);
+
+    void HaveLoggedIn();
+
+    void HaveObtainedIp(const QString &ip);
+
 private:
-	InterruptibleSleeper *sleeper=nullptr;
-	DogCom *dogcom=nullptr;
+    InterruptibleSleeper *sleeper = nullptr;
+    DogCom *dogcom = nullptr;
 };
 
 #endif // DOGCOMCONTROLLER_H

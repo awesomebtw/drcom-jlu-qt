@@ -36,9 +36,6 @@ private:
     int sockfd = -1;
     struct sockaddr_in bind_addr;
     struct sockaddr_in dest_addr;
-    const static int BIND_PORT = 61440;
-    const static int DEST_PORT = 61440;
-    static char AUTH_SERVER[20];
 
 public:
     DogcomSocket();
