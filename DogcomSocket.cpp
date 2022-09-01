@@ -1,19 +1,18 @@
 #ifdef WIN32
-#include <winsock2.h>
-#else
 
+#include "constants.h"
+#include <winsock2.h>
+
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
-
 #endif
 
 #include <string>
-#include <time.h>
 #include <QDebug>
-#include "constants.h"
 #include "DogcomSocket.h"
 
 using std::string;
@@ -31,23 +30,13 @@ void DogcomSocket::init()
 
     memset(&bind_addr, 0, sizeof(bind_addr));
     bind_addr.sin_family = AF_INET;
-#ifdef WIN32
-    bind_addr.sin_addr.S_un.S_addr = inet_addr("0.0.0.0");
-#else
     bind_addr.sin_addr.s_addr = inet_addr("0.0.0.0");
-#endif
     bind_addr.sin_port = htons(PORT_BIND);
 
     memset(&dest_addr, 0, sizeof(dest_addr));
     dest_addr.sin_family = AF_INET;
-#ifdef WIN32
-    dest_addr.sin_addr.S_un.S_addr = inet_addr(AUTH_SERVER);
-#else
-    dest_addr.sin_addr.s_addr = inet_addr(AUTH_SERVER);
-#endif
+    dest_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
     dest_addr.sin_port = htons(PORT_DEST);
-
-    srand(time(nullptr));
 
     // create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
@@ -78,11 +67,10 @@ void DogcomSocket::init()
     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout,
                    sizeof(timeout)) < 0) {
 #ifdef WIN32
-        throw DogcomSocketException(DogcomError::SET_SOCK_OPT_TIMEOUT,
-                                    WSAGetLastError());
+        throw DogcomSocketException(DogcomError::SET_SOCK_OPT_TIMEOUT, WSAGetLastError());
 #else
         throw DogcomSocketException(DogcomError::SET_SOCK_OPT_TIMEOUT,
-                                    sockfd);
+                sockfd);
 #endif
     }
 
@@ -92,7 +80,7 @@ void DogcomSocket::init()
 #ifdef WIN32
     if ((r = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, sizeof(optval))) < 0) {
         throw DogcomSocketException(DogcomError::SET_SOCK_OPT_REUSE, r);
-        }
+    }
 #else
     if ((r = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, sizeof(optval))) < 0) {
         throw DogcomSocketException(DogcomError::SET_SOCK_OPT_REUSE, r);
@@ -100,7 +88,7 @@ void DogcomSocket::init()
 
 #ifdef SO_REUSEPORT
     if ((r = setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (char *) &optval, sizeof(optval))) < 0) {
-        throw DogcomSocketException(DogcomError::SET_SOCK_OPT_REUSE,r);
+        throw DogcomSocketException(DogcomError::SET_SOCK_OPT_REUSE, r);
     }
 #endif
 #endif
@@ -116,7 +104,7 @@ int DogcomSocket::read(char *buf)
 #ifdef WIN32
     int addrlen = sizeof(dest_addr);
 #else
-    socklen_t addrlen = sizeof(dest_addr);
+    socklen_t addrlen=sizeof(dest_addr);
 #endif
     return recvfrom(sockfd, buf, 1024, 0, (struct sockaddr *) &dest_addr, &addrlen);
 }
@@ -135,47 +123,40 @@ DogcomSocket::~DogcomSocket()
     qDebug() << "socket closed";
 }
 
-const char *DogcomSocketException::what() const
-
-noexcept {
-static char buf[1024];
-switch (errCode) {
-case DogcomError::WSA_START_UP:
-snprintf(buf,
-sizeof(buf),
-"WSAStartup failed. Error code: %d",
-realErrCode);
-break;
-case DogcomError::SOCKET:
-snprintf(buf,
-sizeof(buf),
-"socket failed. Error code: %d",
-realErrCode);
-break;
-case DogcomError::BIND:
-snprintf(buf,
-sizeof(buf),
-"bind failed. Error code: %d",
-realErrCode);
-break;
-case DogcomError::SET_SOCK_OPT_TIMEOUT:
-snprintf(buf,
-sizeof(buf),
-"timeout failed. Error code: %d",
-realErrCode);
-break;
-case DogcomError::SET_SOCK_OPT_REUSE:
-snprintf(buf,
-sizeof(buf),
-"port reuse failed. Error code: %d",
-realErrCode);
-break;
-}
-return
-buf;
+const char *DogcomSocketException::what() const noexcept
+{
+    static std::array<char, 1024> buf;
+    switch (errCode) {
+        case DogcomError::WSA_START_UP:
+            snprintf(buf.data(), buf.size(),
+                     "WSAStartup failed. Error code: %d",
+                     realErrCode);
+            break;
+        case DogcomError::SOCKET:
+            snprintf(buf.data(), buf.size(),
+                     "socket failed. Error code: %d",
+                     realErrCode);
+            break;
+        case DogcomError::BIND:
+            snprintf(buf.data(), buf.size(),
+                     "bind failed. Error code: %d",
+                     realErrCode);
+            break;
+        case DogcomError::SET_SOCK_OPT_TIMEOUT:
+            snprintf(buf.data(), buf.size(),
+                     "timeout failed. Error code: %d",
+                     realErrCode);
+            break;
+        case DogcomError::SET_SOCK_OPT_REUSE:
+            snprintf(buf.data(), buf.size(),
+                     "port reuse failed. Error code: %d",
+                     realErrCode);
+            break;
+    }
+    return buf.data();
 }
 
-DogcomSocketException::DogcomSocketException(int errCode, int realErrCode)
+DogcomSocketException::DogcomSocketException(DogcomError errCode, int realErrCode)
         : errCode(errCode), realErrCode(realErrCode)
 {
 }
