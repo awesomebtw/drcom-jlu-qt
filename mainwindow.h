@@ -3,34 +3,39 @@
 
 #include <QDialog>
 #include <QSettings>
-#include <QRegExpValidator>
-#include <dogcomcontroller.h>
+#include <QRegularExpressionValidator>
 #include <QSystemTrayIcon>
-#include "singleapplication.h"
+#include <memory>
+#include "dogcomcontroller.h"
 
 namespace Ui
 {
     class MainWindow;
 }
 
+enum class State {
+    OFFLINE,
+    LOGGING,
+    ONLINE,
+};
+
 class MainWindow : public QDialog {
-    Q_OBJECT
+Q_OBJECT
 
 public:
-    explicit MainWindow(SingleApplication *parentApp = nullptr, QWidget *parent = nullptr);
+    explicit MainWindow(QApplication *parentApp = nullptr, QWidget *parent = nullptr);
 
     ~MainWindow() override;
 
     void closeEvent(QCloseEvent *) override;
 
-private
-    slots:
-            void on_checkBoxAutoLogin_toggled(bool
-    checked);
+private slots:
+
+    void on_checkBoxAutoLogin_toggled(bool checked);
 
     void on_checkBoxRemember_toggled(bool checked);
 
-    void on_comboBoxMAC_currentTextChanged(const QString &arg1);
+    void on_comboBoxMAC_currentTextChanged(const QString &);
 
     void on_pushButtonLogin_clicked();
 
@@ -42,10 +47,9 @@ private
 
     void on_checkBoxHideLoginWindow_toggled(bool checked);
 
-public
-    slots:
-            void HandleOffline(int
-    reason);
+public slots:
+
+    void HandleOffline(LoginResult reason);
 
     void HandleLoggedIn();
 
@@ -61,41 +65,39 @@ public
 
 private:
     Ui::MainWindow *ui;
-    SingleApplication *app = nullptr;
+    QApplication *app = nullptr;
     const QString CUSTOM_MAC = tr("custom (format: 1A:2B:3C:4D:5E:6F case insensitive)");
     const QString APP_NAME = tr("DrCOM JLU Qt version");
+    QSettings s;
 
     // 用于确保调用socket的析构函数，释放资源
-    bool bQuit = false;
-    bool bRestart = false;
-
-    // 记录用户保存的信息
-    QString account, password, mac_addr;
-    bool bRemember, bAutoLogin;
-    bool bHideWindow, bNotShowWelcome;
+    bool quit = false;
+    bool restart = false;
 
     // 用于在未登录时关闭窗口就退出
-    int CURR_STATE;
+    State currState;
 
-    QRegExpValidator *macValidator;
-    DogcomController *dogcomController;
+    QRegularExpressionValidator macValidator;
+    DogcomController dogcomController{};
 
     // 设置托盘中的注销按钮的可用性
     void DisableLogOutButton(bool yes);
 
     // 窗口菜单
-    QAction *aboutAction;
-    QMenu *windowMenu;
+    std::unique_ptr<QAction> aboutAction;
+    std::unique_ptr<QMenu> windowMenu;
 
     void AboutDrcom();
 
     // 托盘图标
-    QAction *restartAction;
-    QAction *restoreAction;
-    QAction *logOutAction;
-    QAction *quitAction;
-    QSystemTrayIcon *trayIcon;
+    std::unique_ptr<QAction> restartAction;
+    std::unique_ptr<QAction> restoreAction;
+    std::unique_ptr<QAction> logOutAction;
+    std::unique_ptr<QAction> quitAction;
+    std::unique_ptr<QSystemTrayIcon> trayIcon;
     QMenu *trayIconMenu;
+
+    QIcon offlineIcon, onlineIcon;
 
     void CreateActions();
 
@@ -103,7 +105,13 @@ private:
 
     void SetIcon(bool online);
 
-    void GetInputs();
+    void WriteInputs();
+
+    static Qt::CheckState BooleanToCheckState(bool val);
+
+    static QByteArray Encrypt(QByteArray arr);
+
+    static QByteArray Decrypt(QByteArray arr);
 
     void LoadSettings();
 
