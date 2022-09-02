@@ -626,8 +626,3 @@ void MainWindow::on_checkBoxHideLoginWindow_toggled(bool checked)
 {
     s.setValue(ID_HIDE_WINDOW, checked);
 }
-
-MainWindow::~MainWindow()
-{
-    delete ui;
-}

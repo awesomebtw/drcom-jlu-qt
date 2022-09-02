@@ -8,7 +8,9 @@
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <memory>
+
 #include "dogcomcontroller.h"
+#include "ui_mainwindow.h"
 
 namespace Ui
 {
@@ -26,8 +28,6 @@ Q_OBJECT
 
 public:
     explicit MainWindow(QApplication *parentApp = nullptr, QWidget *parent = nullptr);
-
-    ~MainWindow() override;
 
     void closeEvent(QCloseEvent *) override;
 
@@ -66,7 +66,7 @@ public slots:
     void RestartDrcomByUser();
 
 private:
-    Ui::MainWindow *ui;
+    std::unique_ptr<Ui::MainWindow> ui;
     QApplication *app = nullptr;
     const QString CUSTOM_MAC = tr("custom (format: 1A:2B:3C:4D:5E:6F case insensitive)");
     const QString APP_NAME = tr("DrCOM JLU Qt version");
