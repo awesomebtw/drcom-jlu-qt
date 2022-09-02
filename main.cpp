@@ -1,55 +1,42 @@
-﻿#include <QDebug>
-#include <QDir>
-#include <QFile>
+﻿#include <QDir>
 #include <QMessageBox>
-#include <QProcess>
 #include <QSystemSemaphore>
 #include <QSharedMemory>
 #include <QTranslator>
+#include <iostream>
 
 #include "mainwindow.h"
 
-static QString timePoint;
-
 //日志生成
-void LogMsgOutput(QtMsgType type, const QMessageLogContext &, const QString &msg)
+void LogMsgOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     static QMutex mutex; //日志代码互斥锁
-
-    // 持有锁
     mutex.lock();
 
     // Critical Resource of Code
-    QByteArray localMsg = msg.toLocal8Bit();
-    QString log;
+    if (context.file != nullptr && context.function != nullptr) {
+        std::clog << context.file << ": " << context.function << ": " << context.line << ": ";
+    }
 
     switch (type) {
         case QtDebugMsg:
-            log.append(QString("Debug %1").arg(localMsg.constData()));
+            std::clog << "[Debug] ";
             break;
         case QtInfoMsg:
-            log.append(QString("Info: %1").arg(localMsg.constData()));
+            std::clog << "[Info] ";
             break;
         case QtWarningMsg:
-            log.append(QString("Warning: %1").arg(localMsg.constData()));
+            std::clog << "[Warning] ";
             break;
         case QtCriticalMsg:
-            log.append(QString("Critical: %1").arg(localMsg.constData()));
+            std::clog << "[Critical] ";
             break;
         case QtFatalMsg:
-            log.append(QString("Fatal: %1").arg(localMsg.constData()));
+            std::clog << "[Fatal] ";
             break;
     }
+    std::clog << msg.toLocal8Bit().data() << '\n';
 
-    QDir dir(QApplication::applicationDirPath());
-    dir.mkdir("logs");
-    QFile file(dir.path() + QString("/logs/log%1.lgt").arg(timePoint));
-    file.open(QIODevice::WriteOnly | QIODevice::Append);
-    QTextStream out(&file);
-    out << log << Qt::endl;
-    file.close();
-
-    // 释放锁
     mutex.unlock();
 }
 
@@ -59,6 +46,10 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
 
+    QTranslator translator;
+    (void) translator.load("DrComJluQt_zh_CN.qm");
+    QApplication::installTranslator(&translator);
+
     QSystemSemaphore semaphore("DrcomQtSem", 1);  // create semaphore
     semaphore.acquire(); // Raise the semaphore, barring other instances to work with shared memory
 
@@ -66,14 +57,14 @@ int main(int argc, char *argv[])
     // in linux / unix shared memory is not freed when the application terminates abnormally,
     // so you need to get rid of the garbage
     QSharedMemory nix_fix_shared_memory("DrcomQtSharedMemory");
-    if(nix_fix_shared_memory.attach()){
+    if (nix_fix_shared_memory.attach()){
         nix_fix_shared_memory.detach();
     }
 #endif
     QSharedMemory sharedMemory("DrcomQtSharedMemory");  // Create a copy of the shared memory
 
-    bool is_running = true;
-    for (int i = 0; is_running && i < 100; i++) {
+    bool isRunning = true;
+    for (int i = 0; isRunning && i < 5; i++) {
         // We are trying to attach a copy of the shared memory to an existing segment
         // If successful, it determines that there is already a running instance
         // To support restarting functionality, waiting for some time to see if the last instance closed
@@ -84,37 +75,25 @@ int main(int argc, char *argv[])
             QThread::msleep(60);
         } else {
             sharedMemory.create(1);
-            is_running = false;
+            isRunning = false;
         }
     }
     semaphore.release();
 
-    // If you already run one instance of the application, then we inform the user about it
-    // and complete the current instance of the application
-    if (is_running) {
-        QMessageBox msgBox;
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.setText("The application is already running. Allowed to run only one instance of the application.");
-        msgBox.exec();
+    if (isRunning) {
+        QMessageBox::warning(nullptr, "", QApplication::tr("The application is already running."));
         return 1;
     }
 
-    //release模式输出日志到文件
-    // 因为调用了QApplication::applicationDirPath()
-    // 要在QApplication实例化之后调用
-#ifndef QT_DEBUG
-    timePoint = QDateTime::currentDateTime().toString("yyyyMMddHHmmss");
+    std::ios::sync_with_stdio(false);
     qInstallMessageHandler(LogMsgOutput);
-#endif
-    QApplication::setApplicationName("DrcomQt");
-    QApplication::setApplicationVersion("1.0.0.6");
+
+    QApplication::setApplicationName("DrcomJluQt");
+    QApplication::setApplicationDisplayName(QApplication::tr("DrCOM JLU Qt"));
+    QApplication::setApplicationVersion("1.0.1");
     QApplication::setQuitOnLastWindowClosed(false);
 
     qDebug() << "...main...";
-
-    QTranslator translator;
-    (void) translator.load(":/ts/DrCOM_zh_CN.qm");
-    QApplication::installTranslator(&translator);
 
     MainWindow w(&a);
 
@@ -122,11 +101,10 @@ int main(int argc, char *argv[])
     bool hideWindow = s.value(ID_HIDE_WINDOW, false).toBool();
     // 如果是软件自行重启的就不显示窗口
     int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
-    qDebug() << "main: restartTimes=" << restartTimes;
+    qDebug() << "restartTimes = " << restartTimes;
     if (hideWindow) {
         qDebug() << "not show window caused by user settings";
     } else if (restartTimes > 0) {
-        // 是自行重启不显示窗口
         qDebug() << "not show window caused by self restart";
     } else {
         w.ShowLoginWindow();
