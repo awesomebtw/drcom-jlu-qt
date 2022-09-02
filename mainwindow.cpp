@@ -71,6 +71,8 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     connect(restoreAction.get(), &QAction::triggered, this, &MainWindow::ShowLoginWindow);
     logOutAction = std::make_unique<QAction>(tr("&Logout"), this);
     connect(logOutAction.get(), &QAction::triggered, this, &MainWindow::UserLogOut);
+    restartAction = std::make_unique<QAction>(tr("Re&start"), this);
+    connect(restartAction.get(), &QAction::triggered, this, &MainWindow::RestartDrcomByUser);
     quitAction = std::make_unique<QAction>(tr("&Quit"), this);
     connect(quitAction.get(), &QAction::triggered, this, &MainWindow::QuitDrcom);
 
@@ -167,12 +169,13 @@ void MainWindow::ShowLoginWindow()
 
 void MainWindow::RestartDrcom()
 {
-    restart = true;
-    if (currState == State::ONLINE)
+    if (currState == State::ONLINE) {
+        currState = State::ABOUT_TO_RESTART;
         dogcomController.LogOut();
-    else if (currState == State::OFFLINE) {
+    } else if (currState == State::OFFLINE) {
         qDebug() << "Restarting Drcom...";
         QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
+        currState = State::ABOUT_TO_RESTART;
         qApp->quit();
         qDebug() << "Restart done.";
     } // 正在登录时候退出，假装没看到，不理
@@ -184,10 +187,11 @@ void MainWindow::QuitDrcom()
     s.setValue(ID_RESTART_TIMES, 0);
     qDebug() << "reset restartTimes QuitDrcom";
 
-    quit = true;
     if (currState == State::ONLINE) {
+        currState = State::ABOUT_TO_QUIT;
         dogcomController.LogOut();
     } else if (currState == State::OFFLINE) {
+        currState = State::ABOUT_TO_QUIT;
         qApp->quit();
     }
     // 正在登录时候退出，假装没看到，不理
@@ -339,11 +343,11 @@ void MainWindow::LoginButtonClicked()
     auto password = Decrypt(s.value(ID_PASSWORD, "").toByteArray());
 
     if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
-        QMessageBox::warning(this, APP_NAME, tr("Input can not be empty!"));
+        QMessageBox::warning(this, QApplication::applicationDisplayName(), tr("Input can not be empty!"));
         return;
     }
     if (macAddr.length() != 17) {
-        QMessageBox::warning(this, APP_NAME, tr("Illegal MAC address!"));
+        QMessageBox::warning(this, QApplication::applicationDisplayName(), tr("Illegal MAC address!"));
         return;
     }
 
@@ -407,11 +411,11 @@ void MainWindow::WriteInputs()
 
 void MainWindow::HandleOfflineUserLogout(const QString &string) const
 {
-    if (quit) {
+    if (currState == State::ABOUT_TO_QUIT) {
         qApp->quit();
         return;
     }
-    if (restart) {
+    if (currState == State::ABOUT_TO_RESTART) {
         qDebug() << "Restarting Drcom...";
         QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
         qApp->quit();
@@ -593,7 +597,7 @@ void MainWindow::HandleIpAddress(const QString &ip)
 
 void MainWindow::BrowserButtonClicked()
 {
-    QDesktopServices::openUrl(QUrl(""));
+    QDesktopServices::openUrl(QUrl("http://ip.jlu.edu.cn"));
 }
 
 void MainWindow::UserLogOut()

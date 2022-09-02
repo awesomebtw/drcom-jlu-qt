@@ -16,6 +16,10 @@ enum class State {
     OFFLINE,
     LOGGING,
     ONLINE,
+
+    // 用于确保调用 socket 的析构函数，释放资源
+    ABOUT_TO_QUIT,
+    ABOUT_TO_RESTART,
 };
 
 class MainWindow : public QDialog {
@@ -73,12 +77,7 @@ private:
     std::unique_ptr<Ui::MainWindow> ui;
     QApplication *app = nullptr;
     const QString CUSTOM_MAC = tr("custom (format: 1A:2B:3C:4D:5E:6F case insensitive)");
-    const QString APP_NAME = tr("DrCOM JLU Qt version");
     QSettings s;
-
-    // 用于确保调用socket的析构函数，释放资源
-    bool quit = false;
-    bool restart = false;
 
     // 用于在未登录时关闭窗口就退出
     State currState;
