@@ -30,7 +30,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
         ui(new Ui::MainWindow),
         app(parentApp),
         s(SETTINGS_FILE_NAME, QSettings::IniFormat),
-        macValidator(QRegularExpression("^[0-9a-fA-F]{2}([:-][0-9a-fA-F]{2}){5}$")),
+        macValidator(QRegularExpression("^[0-9a-fA-F]{2}([:-][0-9a-fA-F]{2}){5}"), this),
         trayIconMenu(new QMenu(this)),
         onlineIcon(":/images/online.png"),
         offlineIcon(":/images/offline.png"),
@@ -55,7 +55,6 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
             ui->comboBoxMAC->addItem(i.hardwareAddress() + " [" + i.humanReadableName() + ']', i.hardwareAddress());
         }
     }
-    ui->comboBoxMAC->addItem(CUSTOM_MAC);
 
     // 重启功能
     connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUser);
@@ -95,7 +94,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     // 显示出来托盘图标
     trayIcon->show();
 
-    // 创建窗口菜单
+    // about
     connect(ui->aboutPushButton, &QPushButton::clicked, this, &MainWindow::AboutDrcom);
 
     // 读取配置文件
@@ -111,14 +110,14 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     connect(&upTimer, &QTimer::timeout, this, &MainWindow::UpdateTimer);
 
     // 验证手动输入的mac地址
-    ui->lineEditMAC->setValidator(&macValidator);
+    ui->comboBoxMAC->lineEdit()->setValidator(&macValidator);
 
     // 尚未登录 不可注销
     DisableLogOutTrayContextMenu(true);
 
     // 自动登录功能
     int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
-    qDebug() << "MainWindow constructor: restartTimes = " << restartTimes;
+    qDebug() << "restartTimes = " << restartTimes;
     if (restartTimes > 0 || s.value(ID_AUTO_LOGIN, false).toBool()) { // 尝试自动重启中
         emit ui->loginButton->click();
     }
@@ -312,17 +311,15 @@ void MainWindow::SetMAC(const QString &m)
 {
     for (int i = 0; i < ui->comboBoxMAC->count(); i++) {
         auto str = ui->comboBoxMAC->itemData(i);
-        if (str.isNull())
-            continue;
-        if (str.toString().compare(m) == 0) {
+        if (str.toString().compare(m) == 0 || (str.isNull() && ui->comboBoxMAC->itemText(i).compare(m) == 0)) {
             //当前列表中有该mac地址
             ui->comboBoxMAC->setCurrentIndex(i);
             return;
         }
     }
     // 当前列表中没有该mac地址，填充到输入框中
-    ui->comboBoxMAC->setCurrentText(CUSTOM_MAC);
-    ui->lineEditMAC->setText(m);
+    ui->comboBoxMAC->addItem(m, m);
+    ui->comboBoxMAC->setCurrentText(m);
 }
 
 void MainWindow::on_checkBoxAutoLogin_toggled(bool checked)
@@ -337,11 +334,6 @@ void MainWindow::on_checkBoxRemember_toggled(bool checked)
     if (!checked) {
         ui->checkBoxAutoLogin->setChecked(false);
     }
-}
-
-void MainWindow::on_comboBoxMAC_currentTextChanged(const QString &)
-{
-    ui->lineEditMAC->setDisabled(!ui->comboBoxMAC->currentData().isNull());
 }
 
 void MainWindow::LoginButtonClicked()
@@ -373,20 +365,11 @@ void MainWindow::SetDisableInput(bool yes)
     ui->lineEditAccount->setDisabled(yes);
     ui->lineEditPass->setDisabled(yes);
     ui->comboBoxMAC->setDisabled(yes);
-    ui->lineEditMAC->setDisabled(yes);
     ui->checkBoxRemember->setDisabled(yes);
     ui->checkBoxAutoLogin->setDisabled(yes);
     ui->checkBoxNotShowWelcome->setDisabled(yes);
     ui->checkBoxHideLoginWindow->setDisabled(yes);
     ui->loginButton->setDisabled(yes);
-
-    if (!yes) {
-        // 要启用输入框
-        if (!ui->comboBoxMAC->currentData().isNull()) {
-            // 当前选的不是自定义mac地址
-            ui->lineEditMAC->setDisabled(true);
-        }
-    }
 }
 
 void MainWindow::SetIcon(bool online)
@@ -409,8 +392,8 @@ void MainWindow::WriteInputs()
     s.setValue(ID_ACCOUNT, ui->lineEditAccount->text());
     s.setValue(ID_PASSWORD,
                Encrypt(ui->lineEditPass->text().toLatin1())); // since all characters in a password are ascii
-    if (ui->lineEditMAC->isEnabled()) {
-        s.setValue(ID_MAC, ui->lineEditMAC->text().toUpper());
+    if (ui->comboBoxMAC->currentData().isNull()) {
+        s.setValue(ID_MAC, ui->comboBoxMAC->currentText().toUpper());
     } else {
         s.setValue(ID_MAC, ui->comboBoxMAC->currentData().toString().toUpper());
     }

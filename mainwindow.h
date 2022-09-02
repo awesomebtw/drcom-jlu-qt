@@ -36,8 +36,6 @@ private slots:
 
     void on_checkBoxRemember_toggled(bool checked);
 
-    void on_comboBoxMAC_currentTextChanged(const QString &);
-
     void LoginButtonClicked();
 
     void IconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -76,7 +74,6 @@ public slots:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     QApplication *app = nullptr;
-    const QString CUSTOM_MAC = tr("custom (format: 1A:2B:3C:4D:5E:6F case insensitive)");
     QSettings s;
 
     // 用于在未登录时关闭窗口就退出
