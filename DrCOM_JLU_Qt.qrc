@@ -2,6 +2,6 @@
     <qresource prefix="/">
         <file>images/offline.png</file>
         <file>images/online.png</file>
-        <file>ts/DrCOM_zh_CN.qm</file>
+        <file>ts/DrComJluQt_zh_CN.qm</file>
     </qresource>
 </RCC>

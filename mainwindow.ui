@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>DrCOM JLU Qt</string>
+   <string/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="sizeConstraint">
@@ -105,10 +105,13 @@
            <item row="2" column="0" rowspan="2">
             <widget class="QLabel" name="labelMAC">
              <property name="text">
-              <string>MAC</string>
+              <string>MAC Address</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -119,28 +122,28 @@
            <item row="0" column="0">
             <widget class="QCheckBox" name="checkBoxRemember">
              <property name="text">
-              <string>Remember</string>
+              <string>Remember credential</string>
              </property>
             </widget>
            </item>
            <item row="0" column="1">
             <widget class="QCheckBox" name="checkBoxAutoLogin">
              <property name="text">
-              <string>AutoLogin</string>
+              <string>Auto login</string>
              </property>
             </widget>
            </item>
            <item row="1" column="0">
             <widget class="QCheckBox" name="checkBoxNotShowWelcome">
              <property name="text">
-              <string>NotShowWelcomePage</string>
+              <string>Don't show welcome page</string>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
             <widget class="QCheckBox" name="checkBoxHideLoginWindow">
              <property name="text">
-              <string>HideLoginWindow</string>
+              <string>Hide this window</string>
              </property>
             </widget>
            </item>
@@ -179,20 +182,23 @@
          <item row="5" column="0" colspan="2">
           <widget class="QCommandLinkButton" name="browserButton">
            <property name="text">
-            <string>&amp;Open web browser</string>
+            <string>Launch &amp;browser</string>
            </property>
            <property name="description">
-            <string>Surf the web...</string>
+            <string>Visit ip.jlu.edu.cn using default browser</string>
            </property>
           </widget>
          </item>
          <item row="0" column="0" colspan="2">
           <widget class="QLabel" name="alreadyLoggedInLabel">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Logged in&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>Logged in. You may close this window and reopen it later using tray icon.</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
            </property>
           </widget>
          </item>

@@ -7,14 +7,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# TODO: remove this
-set(CMAKE_PREFIX_PATH C:/msys64/ucrt64/lib/)
-
-find_package(Qt6 COMPONENTS Gui Widgets Network REQUIRED)
+find_package(Qt6 COMPONENTS Gui Widgets Network Linguist REQUIRED)
 
 FILE(GLOB SC_FILES "*.cpp" "*.h" "*.qrc")
+FILE(GLOB UI_FILES "*.ui")
 
 add_executable(${PROJECT_NAME} ${SC_FILES})
+
+qt_add_lupdate(DrcomQt SOURCES ${SC_FILES} ${UI_FILES} TS_FILES ts/DrcomJluQt_zh_CN.ts)
+qt_add_lrelease(DrcomQt TS_FILES ts/DrcomJluQt_zh_CN.ts)
 
 target_link_libraries(DrcomQt cryptopp)
 target_link_libraries(DrcomQt Qt6::Gui Qt6::Widgets Qt6::Network)
