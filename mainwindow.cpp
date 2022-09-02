@@ -59,7 +59,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
 
     // 重启功能
     connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUser);
-    connect(ui->loginButton, &QCommandLinkButton::clicked, this, &MainWindow::on_pushButtonLogin_clicked);
+    connect(ui->loginButton, &QCommandLinkButton::clicked, this, &MainWindow::LoginButtonClicked);
     connect(ui->logoutPushButton, &QPushButton::clicked, this, &MainWindow::UserLogOut);
 
     // 创建托盘菜单和图标
@@ -199,13 +199,8 @@ void MainWindow::RestartDrcomByUser()
 
 void MainWindow::IconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    switch (reason) {
-        case QSystemTrayIcon::DoubleClick: {
-            restoreAction->activate(restoreAction->Trigger);
-            break;
-        }
-        default:
-            break;
+    if (reason == QSystemTrayIcon::DoubleClick) {
+        restoreAction->activate(restoreAction->Trigger);
     }
 }
 
@@ -330,7 +325,7 @@ void MainWindow::on_comboBoxMAC_currentTextChanged(const QString &)
     ui->lineEditMAC->setDisabled(!ui->comboBoxMAC->currentData().isNull());
 }
 
-void MainWindow::on_pushButtonLogin_clicked()
+void MainWindow::LoginButtonClicked()
 {
     WriteInputs();
 
@@ -338,7 +333,7 @@ void MainWindow::on_pushButtonLogin_clicked()
     auto account = s.value(ID_ACCOUNT, "").toString();
     auto password = Decrypt(s.value(ID_PASSWORD, "").toByteArray());
 
-    if (!account.compare("") || !password.compare("") || !macAddr.compare("")) {
+    if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
         QMessageBox::warning(this, APP_NAME, tr("Input can not be empty!"));
         return;
     }
@@ -405,129 +400,134 @@ void MainWindow::WriteInputs()
     s.setValue(ID_AUTO_LOGIN, ui->checkBoxAutoLogin->checkState());
 }
 
+void MainWindow::HandleOfflineUserLogout(const QString &string) const
+{
+    if (quit) {
+        qApp->quit();
+        return;
+    }
+    if (restart) {
+        qDebug() << "Restarting Drcom...";
+        QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
+        qApp->quit();
+        qDebug() << "Restart done.";
+        return;
+    }
+}
+
+void MainWindow::HandleOfflineChallengeFailed(const QString &title)
+{
+    // 弹出一个提示框，带一个直接重启客户端的按钮
+    auto text = tr("Challenge failed. Please check your connection:)") + " " +
+                tr("Attention that you should connect to wifi or wired firstly and then start the drcom "
+                   "client. If you have connected, you may restart drcom to solve the problem.") + " " +
+                tr("Restart DrCOM?");
+    auto buttonPressed = QMessageBox::critical(
+            this,
+            title,
+            text,
+            QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No
+    );
+
+    if (buttonPressed == QMessageBox::StandardButton::Yes) {
+        qDebug() << "Restart DrCOM confirmed in case OfflineReason::CHALLENGE_FAILED";
+        RestartDrcomByUser();
+    }
+}
+
+void MainWindow::HandleOfflineTimeout(const QString &string)
+{
+    // 先尝试自己重启若干次，自个重启还不行的话再提示用户
+    // 自己重启的话需要用户提前勾选记住密码
+    if (s.value(ID_REMEMBER, false).toBool()) {
+        int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
+        qDebug() << "case OfflineReason::TIMEOUT: restartTimes=" << restartTimes;
+        if (restartTimes <= RETRY_TIMES) {
+            qDebug() << "case OfflineReason::TIMEOUT: restartTimes++";
+            s.setValue(ID_RESTART_TIMES, restartTimes + 1);
+            //尝试自行重启
+            qDebug() << "trying to restart to reconnect...";
+            qDebug() << "restarting for the" << restartTimes << "times";
+            RestartDrcom();
+            return;
+        }
+    }
+
+    // 弹出一个提示框，带一个直接重启客户端的按钮
+    auto boxText = tr("Time out, please check your connection") + " " +
+                   tr("The DrCOM client will try to restart to solve some unstable problems but the function "
+                      "relies on \"remember me\"") + " " +
+                   tr("Due to some reasons, you should connect to wifi or wired firstly and then start the "
+                      "drcom client. So you may not login until you restart DrCOM :D") + " " +
+                   tr("Restart DrCOM?");
+
+    if (QMessageBox::question(this, tr("Login failed"), boxText) == QMessageBox::StandardButton::Yes) {
+        qDebug() << "Restart DrCOM confirmed in case OfflineReason::TIMEOUT";
+        RestartDrcomByUser();
+    }
+}
+
 void MainWindow::HandleOffline(LoginResult reason)
 {
     currState = State::OFFLINE;
 
+    auto loginFailedTitle = tr("Login failed");
+    auto offlineTitle = tr("You have been offline");
     switch (reason) {
-        case LoginResult::USER_LOGOUT: {
-            if (quit) {
-                qApp->quit();
-                return;
-            }
-            if (restart) {
-                qDebug() << "Restarting Drcom...";
-                QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
-                qApp->quit();
-                qDebug() << "Restart done.";
-                return;
-            }
+        case LoginResult::USER_LOGOUT:
+            HandleOfflineUserLogout(loginFailedTitle);
             break;
-        }
-        case LoginResult::BIND_FAILED: {
-            QMessageBox::critical(this, tr("Login failed"),
-                                  tr("Binding port failed. Please check if there are other clients occupying the port"));
+        case LoginResult::BIND_FAILED:
+            QMessageBox::critical(this, loginFailedTitle, tr(
+                    "Binding port failed. Please check if there are other clients occupying the port"));
             break;
-        }
-        case LoginResult::CHALLENGE_FAILED: {
-            // 弹出一个提示框，带一个直接重启客户端的按钮
-            QMessageBox msgBox;
-            msgBox.setText(tr("Login failed") + " " + tr("Challenge failed. Please check your connection:)") + " " +
-                           tr("Attention that you should connect to wifi or wired firstly and then start the drcom "
-                              "client. If you have connected, you may restart drcom to solve the problem.")
-                           + " " + tr("Restart DrCOM?"));
-            QAbstractButton *buttonYes = msgBox.addButton(tr("Yes"), QMessageBox::YesRole);
-            msgBox.addButton(tr("Nope"), QMessageBox::NoRole);
-            msgBox.exec();
-            if (msgBox.clickedButton() == buttonYes) {
-                qDebug() << "Restart DrCOM confirmed in case OfflineReason::CHALLENGE_FAILED";
-                RestartDrcomByUser();
-            }
+        case LoginResult::CHALLENGE_FAILED:
+            HandleOfflineChallengeFailed(loginFailedTitle);
             break;
-        }
-        case LoginResult::CHECK_MAC: {
-            QMessageBox::critical(this, tr("Login failed"), tr("Someone is using this account with wired"));
+        case LoginResult::CHECK_MAC:
+            QMessageBox::critical(this, loginFailedTitle, tr("Someone is using this account with wired"));
             break;
-        }
-        case LoginResult::SERVER_BUSY: {
-            QMessageBox::critical(this, tr("Login failed"), tr("The server is busy, please log back in again"));
+        case LoginResult::SERVER_BUSY:
+            QMessageBox::critical(this, loginFailedTitle, tr("The server is busy, please log back in again"));
             break;
-        }
-        case LoginResult::WRONG_PASS: {
-            QMessageBox::critical(this, tr("Login failed"), tr("Account and password not match"));
+        case LoginResult::WRONG_PASS:
+            QMessageBox::critical(this, loginFailedTitle, tr("Account and password not match"));
             break;
-        }
-        case LoginResult::NOT_ENOUGH: {
-            QMessageBox::critical(this, tr("Login failed"),
-                                  tr("The cumulative time or traffic for this account has exceeded the limit"));
+        case LoginResult::NOT_ENOUGH:
+            QMessageBox::critical(this, loginFailedTitle, tr(
+                    "The cumulative time or traffic for this account has exceeded the limit"));
             break;
-        }
-        case LoginResult::FREEZE_UP: {
-            QMessageBox::critical(this, tr("Login failed"), tr("This account is suspended"));
+        case LoginResult::FREEZE_UP:
+            QMessageBox::critical(this, loginFailedTitle, tr("This account is suspended"));
             break;
-        }
-        case LoginResult::NOT_ON_THIS_IP: {
-            QMessageBox::critical(this, tr("Login failed"),
-                                  tr("IP address does not match, this account can only be used in the specified IP address"));
+        case LoginResult::NOT_ON_THIS_IP:
+            QMessageBox::critical(this, loginFailedTitle, tr(
+                    "IP address does not match, this account can only be used in the specified IP address"));
             break;
-        }
-        case LoginResult::NOT_ON_THIS_MAC: {
-            QMessageBox::critical(this, tr("Login failed"),
-                                  tr("MAC address does not match, this account can only be used in the specified IP and MAC address"));
+        case LoginResult::NOT_ON_THIS_MAC:
+            QMessageBox::critical(this, loginFailedTitle, tr(
+                    "MAC address does not match, this account can only be used in the specified IP and MAC address"));
             break;
-        }
-        case LoginResult::TOO_MUCH_IP: {
-            QMessageBox::critical(this, tr("Login failed"), tr("This account has too many IP addresses"));
+        case LoginResult::TOO_MUCH_IP:
+            QMessageBox::critical(this, loginFailedTitle, tr("This account has too many IP addresses"));
             break;
-        }
-        case LoginResult::UPDATE_CLIENT: {
-            QMessageBox::critical(this, tr("Login failed"), tr("The client version is incorrect"));
+        case LoginResult::UPDATE_CLIENT:
+            QMessageBox::critical(this, loginFailedTitle, tr("The client version is incorrect"));
             break;
-        }
-        case LoginResult::NOT_ON_THIS_IP_MAC: {
-            QMessageBox::critical(this, tr("Login failed"),
-                                  tr("This account can only be used on specified MAC and IP address"));
+        case LoginResult::NOT_ON_THIS_IP_MAC:
+            QMessageBox::critical(this, loginFailedTitle, tr(
+                    "This account can only be used on specified MAC and IP address"));
             break;
-        }
-        case LoginResult::MUST_USE_DHCP: {
-            QMessageBox::critical(this, tr("Login failed"),
-                                  tr("Your PC set up a static IP, please change to DHCP, and then re-login"));
+        case LoginResult::MUST_USE_DHCP:
+            QMessageBox::critical(this, loginFailedTitle, tr(
+                    "Your PC set up a static IP, please change to DHCP, and then re-login"));
             break;
-        }
-        case LoginResult::TIMEOUT: {
-            // 先尝试自己重启若干次，自个重启还不行的话再提示用户
-            // 自己重启的话需要用户提前勾选记住密码
-            if (s.value(ID_REMEMBER, false).toBool()) {
-                int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
-                qDebug() << "case OfflineReason::TIMEOUT: restartTimes=" << restartTimes;
-                if (restartTimes <= RETRY_TIMES) {
-                    qDebug() << "case OfflineReason::TIMEOUT: restartTimes++";
-                    s.setValue(ID_RESTART_TIMES, restartTimes + 1);
-                    //尝试自行重启
-                    qDebug() << "trying to restart to reconnect...";
-                    qDebug() << "restarting for the" << restartTimes << "times";
-                    RestartDrcom();
-                    return;
-                }
-            }
-
-            // 弹出一个提示框，带一个直接重启客户端的按钮
-            auto boxText = tr("You have been offline") + " " + tr("Time out, please check your connection") + " " +
-                           tr("The DrCOM client will try to restart to solve some unstable problems but the function "
-                           "relies on \"remember me\"") + " " +
-                           tr("Due to some reasons, you should connect to wifi or wired firstly and then start the "
-                              "drcom client. So you may not login until you restart DrCOM :D") + " " +
-                              tr("Restart DrCOM?");
-
-            if (QMessageBox::question(this, tr("You have been offline"), boxText) == QMessageBox::StandardButton::Yes) {
-                qDebug() << "Restart DrCOM confirmed in case OfflineReason::TIMEOUT";
-                RestartDrcomByUser();
-            }
+        case LoginResult::TIMEOUT:
+            HandleOfflineTimeout(loginFailedTitle);
             break;
-        }
         case LoginResult::UNKNOWN:
         default:
-            QMessageBox::critical(this, tr("You have been offline"), tr("Unknow reason"));
+            QMessageBox::critical(this, offlineTitle, tr("Unknow reason"));
             break;
     }
 

@@ -39,7 +39,7 @@ private slots:
 
     void on_comboBoxMAC_currentTextChanged(const QString &);
 
-    void on_pushButtonLogin_clicked();
+    void LoginButtonClicked();
 
     void IconActivated(QSystemTrayIcon::ActivationReason reason);
 
@@ -48,6 +48,13 @@ private slots:
     void on_checkBoxNotShowWelcome_toggled(bool checked);
 
     void on_checkBoxHideLoginWindow_toggled(bool checked);
+
+private:
+    void HandleOfflineUserLogout(const QString &string) const;
+
+    void HandleOfflineChallengeFailed(const QString &title);
+
+    void HandleOfflineTimeout(const QString &string);
 
 public slots:
 
