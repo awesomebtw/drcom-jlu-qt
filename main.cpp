@@ -42,7 +42,7 @@ void LogMsgOutput(QtMsgType type, const QMessageLogContext &context, const QStri
 
 int main(int argc, char *argv[])
 {
-    Q_INIT_RESOURCE(DrCOM_JLU_Qt);
+    Q_INIT_RESOURCE(DrcomJluQt);
 
     QApplication a(argc, argv);
 
