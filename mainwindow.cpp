@@ -52,7 +52,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     // 获取mac地址
     for (const QNetworkInterface &i: QNetworkInterface::allInterfaces()) {
         if (!i.flags().testFlag(QNetworkInterface::IsLoopBack)) {
-            ui->comboBoxMAC->addItem(i.hardwareAddress() + " (" + i.name() + ')', i.hardwareAddress());
+            ui->comboBoxMAC->addItem(i.hardwareAddress() + " [" + i.humanReadableName() + ']', i.hardwareAddress());
         }
     }
     ui->comboBoxMAC->addItem(CUSTOM_MAC);
