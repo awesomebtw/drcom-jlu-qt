@@ -228,6 +228,11 @@ Qt::CheckState MainWindow::BooleanToCheckState(bool val)
     }
 }
 
+bool MainWindow::CheckStateToBoolean(Qt::CheckState val)
+{
+    return val != Qt::CheckState::Unchecked;
+}
+
 QByteArray MainWindow::Encrypt(QByteArray arr)
 {
     using namespace CryptoPP;
@@ -409,8 +414,10 @@ void MainWindow::WriteInputs()
     } else {
         s.setValue(ID_MAC, ui->comboBoxMAC->currentData().toString().toUpper());
     }
-    s.setValue(ID_REMEMBER, ui->checkBoxRemember->checkState());
-    s.setValue(ID_AUTO_LOGIN, ui->checkBoxAutoLogin->checkState());
+    s.setValue(ID_REMEMBER, CheckStateToBoolean(ui->checkBoxRemember->checkState()));
+    s.setValue(ID_AUTO_LOGIN, CheckStateToBoolean(ui->checkBoxAutoLogin->checkState()));
+    s.setValue(ID_NOT_SHOW_WELCOME, CheckStateToBoolean(ui->checkBoxNotShowWelcome->checkState()));
+    s.setValue(ID_HIDE_WINDOW, CheckStateToBoolean(ui->checkBoxHideLoginWindow->checkState()));
 }
 
 void MainWindow::HandleOfflineUserLogout(const QString &string) const

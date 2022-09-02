@@ -116,6 +116,8 @@ private:
 
     static Qt::CheckState BooleanToCheckState(bool val);
 
+    bool CheckStateToBoolean(Qt::CheckState val);
+
     static QByteArray Encrypt(QByteArray arr);
 
     static QByteArray Decrypt(QByteArray arr);
