@@ -39,7 +39,7 @@
 > [Ubuntu 18 不显示托盘图标的 bug 的解决方案](https://askubuntu.com/questions/1056226/ubuntu-budgie-18-04-lts-system-tray-icons-not-all-showing)
 
 # 构建依赖项
-1. Qt6 (Core, Gui, Widget, Network)
+1. Qt6 (Gui, Widget, Network)
 2. Crypto++
 
 # 更新日志
