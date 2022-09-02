@@ -23,7 +23,8 @@
 
 ## TODO
 * [ ] 被顶掉：警告！巨大缺陷！本版掉线后会自动重启重新登录！所以顶不掉！待改进
-* [ ] 有时候重启功能不好使，点了重启当前退了没有蹦出来新的，待改进
+* [x] 有时候重启功能不好使，点了重启当前退了没有蹦出来新的，待改进
+* [ ] 改进英文翻译
 
 # 注意事项
 - 掉线后客户端自动重启重连尝试三次。自动重启登录成功后不弹窗口只最小化到托盘。注：自动重启功能依赖于“记住我”选项的勾选，否则没有账户密码自行重启也并没有什么用
@@ -49,7 +50,9 @@
   3. 替换单例和加密的实现，加密现在使用 Crypto++ 库；
   4. 密码用密文保存，具体来说，使用 Crypto++ 实现的 SM4 算法加密密码；
   5. 配置文件能够正确保存到同一文件夹下的 .ini 文件；
-  6. 细节上的修改
+  6. UI 进行一些改进，分为登录前后的页面，更接近官方客户端；
+  7. 增加连接时间显示功能；
+  8. 细节上的修改
 * v 1.0.0.6
   * 更换 QUdpSocket 为原生接口，增强稳定性（并不知道为什么QUdpSocket要设置一个状态
   * 增加了两个 checkbox 可选关闭校园网之窗和隐藏登录窗口
@@ -70,9 +73,9 @@
 # 特别感谢
 **[图标作者](https://github.com/lyj3516)**
 
-**[jlu 的 drcom 协议细节](https://github.com/drcoms/jlu-drcom-client/blob/master/jlu-drcom-java/jlu-drcom-protocol.md)**
+**~~[jlu 的 drcom 协议细节](https://github.com/drcoms/jlu-drcom-client/blob/master/jlu-drcom-java/jlu-drcom-protocol.md)~~**
 
-**[唯一实例](https://github.com/itay-grudev/SingleApplication)**
+**[唯一实例](https://evileg.com/en/post/147/)**
 
 **[登录部分复制了 jlu 部分代码](https://github.com/mchome/dogcom)**
 
