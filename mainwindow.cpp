@@ -59,8 +59,11 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
 
     // 重启功能
     connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUser);
+
+    // Login, logout and browser functionality
     connect(ui->loginButton, &QCommandLinkButton::clicked, this, &MainWindow::LoginButtonClicked);
-    connect(ui->logoutPushButton, &QPushButton::clicked, this, &MainWindow::UserLogOut);
+    connect(ui->logoutButton, &QCommandLinkButton::clicked, this, &MainWindow::UserLogOut);
+    connect(ui->browserButton, &QCommandLinkButton::clicked, this, &MainWindow::BrowserButtonClicked);
 
     // 创建托盘菜单和图标
     // 托盘菜单选项
@@ -123,11 +126,13 @@ void MainWindow::UpdateTimer()
 {
     using namespace std::chrono;
 
-    milliseconds d(upElapsedTimer.elapsed());
+    milliseconds d(upTimer.intervalAsDuration() * uptimeCounter);
     auto hr = duration_cast<hours>(d).count();
     auto min = duration_cast<minutes>(d).count() % 60;
     auto sec = duration_cast<seconds>(d).count() % 60;
     ui->uptimeLabel->setText(QString("%1:%2:%3").arg(hr).arg(min, 2, 10, QChar('0')).arg(sec, 2, 10, QChar('0')));
+
+    uptimeCounter++;
 }
 
 void MainWindow::AboutDrcom()
@@ -550,7 +555,6 @@ void MainWindow::HandleOffline(LoginResult reason)
 void MainWindow::HandleLoggedIn()
 {
     // setup timer
-    upElapsedTimer.restart();
     upTimer.start(10 * 1000); // update every 10 sec
     QTimer::singleShot(0, this, &MainWindow::UpdateTimer);
 
@@ -587,6 +591,11 @@ void MainWindow::HandleIpAddress(const QString &ip)
     ui->ipLabel->setText(ip);
 }
 
+void MainWindow::BrowserButtonClicked()
+{
+    QDesktopServices::openUrl(QUrl(""));
+}
+
 void MainWindow::UserLogOut()
 {
     if (QMessageBox::question(this, tr("Logout"), tr("Are you sure you want to logout?")) !=
@@ -596,7 +605,7 @@ void MainWindow::UserLogOut()
 
     // reset timer
     upTimer.stop();
-    upElapsedTimer.restart();
+    uptimeCounter = 0;
     // 用户主动注销
     dogcomController.LogOut();
     // 注销后应该是想重新登录或者换个号，因此显示出用户界面

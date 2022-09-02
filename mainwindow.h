@@ -12,11 +12,6 @@
 #include "dogcomcontroller.h"
 #include "ui_mainwindow.h"
 
-namespace Ui
-{
-    class MainWindow;
-}
-
 enum class State {
     OFFLINE,
     LOGGING,
@@ -42,6 +37,8 @@ private slots:
     void LoginButtonClicked();
 
     void IconActivated(QSystemTrayIcon::ActivationReason reason);
+
+    static void BrowserButtonClicked();
 
     void UserLogOut();
 
@@ -94,7 +91,7 @@ private:
 
     // uptime
     QTimer upTimer;
-    QElapsedTimer upElapsedTimer;
+    size_t uptimeCounter{};
 
     void UpdateTimer();
 

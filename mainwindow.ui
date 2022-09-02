@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>327</width>
-    <height>278</height>
+    <width>320</width>
+    <height>265</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,8 +19,25 @@
   <property name="windowTitle">
    <string>DrCOM JLU Qt</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
-   <item>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="sizeConstraint">
+    <enum>QLayout::SetFixedSize</enum>
+   </property>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="aboutPushButton">
+     <property name="text">
+      <string>&amp;About</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="restartPushButton">
+     <property name="text">
+      <string>Re&amp;start</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
     <widget class="QStackedWidget" name="centralStackedWidget">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -135,7 +152,7 @@
             <string>Login</string>
            </property>
            <property name="description">
-            <string>Click here to login</string>
+            <string>Connect to auth server; access the Internet</string>
            </property>
           </widget>
          </item>
@@ -148,56 +165,34 @@
        <item>
         <layout class="QGridLayout" name="loggedInGridLayout">
          <property name="leftMargin">
-          <number>7</number>
+          <number>0</number>
          </property>
          <property name="topMargin">
-          <number>7</number>
+          <number>0</number>
          </property>
          <property name="rightMargin">
-          <number>7</number>
+          <number>0</number>
          </property>
          <property name="bottomMargin">
-          <number>7</number>
+          <number>0</number>
          </property>
-         <item row="1" column="0">
-          <widget class="QLabel" name="loggedInUsernameHintLabel">
+         <item row="5" column="0" colspan="2">
+          <widget class="QCommandLinkButton" name="browserButton">
            <property name="text">
-            <string>Logged in as</string>
+            <string>&amp;Open web browser</string>
+           </property>
+           <property name="description">
+            <string>Surf the web...</string>
            </property>
           </widget>
          </item>
-         <item row="4" column="0" colspan="2">
-          <widget class="QPushButton" name="webBrowserPushButton">
+         <item row="0" column="0" colspan="2">
+          <widget class="QLabel" name="alreadyLoggedInLabel">
            <property name="text">
-            <string>Open web browser...</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Logged in&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="ipHintLabel">
-           <property name="text">
-            <string>IP Address</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="uptimeHintLabel">
-           <property name="text">
-            <string>Uptime</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="loggedInUsernameLabel">
-           <property name="text">
-            <string>xxxx</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLabel" name="uptimeLabel">
-           <property name="text">
-            <string>0:00:00</string>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -208,17 +203,48 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0" colspan="2">
-          <widget class="QPushButton" name="logoutPushButton">
+         <item row="2" column="1">
+          <widget class="QLabel" name="uptimeLabel">
            <property name="text">
-            <string>&amp;Logout</string>
+            <string>0:00:00</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="0" colspan="2">
-          <widget class="QLabel" name="alreadyLoggedInLabel">
+         <item row="3" column="0">
+          <widget class="QLabel" name="ipHintLabel">
            <property name="text">
-            <string>Logged in now</string>
+            <string>IP Address</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="loggedInUsernameLabel">
+           <property name="text">
+            <string>Account</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="uptimeHintLabel">
+           <property name="text">
+            <string>Uptime</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="loggedInUsernameHintLabel">
+           <property name="text">
+            <string>Logged in as</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0" colspan="2">
+          <widget class="QCommandLinkButton" name="logoutButton">
+           <property name="text">
+            <string>&amp;Logout</string>
+           </property>
+           <property name="description">
+            <string>Disconnect from the auth server</string>
            </property>
           </widget>
          </item>
@@ -228,24 +254,7 @@
      </widget>
     </widget>
    </item>
-   <item>
-    <widget class="QPushButton" name="aboutPushButton">
-     <property name="text">
-      <string>&amp;About</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="restartPushButton">
-     <property name="text">
-      <string>Re&amp;start</string>
-     </property>
-    </widget>
-   </item>
   </layout>
-  <zorder>centralStackedWidget</zorder>
-  <zorder>restartPushButton</zorder>
-  <zorder>aboutPushButton</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
