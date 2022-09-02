@@ -169,15 +169,18 @@ void MainWindow::ShowLoginWindow()
 
 void MainWindow::RestartDrcom()
 {
-    if (currState == State::ONLINE) {
-        currState = State::ABOUT_TO_RESTART;
-        dogcomController.LogOut();
-    } else if (currState == State::OFFLINE) {
-        qDebug() << "Restarting Drcom...";
-        QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
-        currState = State::ABOUT_TO_RESTART;
-        qApp->quit();
-        qDebug() << "Restart done.";
+    switch (currState) {
+        case State::ONLINE:
+            dogcomController.LogOut(); // restart after logout
+        case State::OFFLINE:
+            qDebug() << "Restarting Drcom...";
+            QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
+            currState = State::ABOUT_TO_RESTART;
+            qApp->quit();
+            qDebug() << "Restart done.";
+            break;
+        default:
+            break;
     } // 正在登录时候退出，假装没看到，不理
 }
 
@@ -187,12 +190,15 @@ void MainWindow::QuitDrcom()
     s.setValue(ID_RESTART_TIMES, 0);
     qDebug() << "reset restartTimes QuitDrcom";
 
-    if (currState == State::ONLINE) {
-        currState = State::ABOUT_TO_QUIT;
-        dogcomController.LogOut();
-    } else if (currState == State::OFFLINE) {
-        currState = State::ABOUT_TO_QUIT;
-        qApp->quit();
+    switch (currState) {
+        case State::ONLINE:
+            dogcomController.LogOut(); // quit after logout
+        case State::OFFLINE:
+            currState = State::ABOUT_TO_QUIT;
+            qApp->quit();
+            break;
+        default:
+            break;
     }
     // 正在登录时候退出，假装没看到，不理
     // qApp->quit() 调用放到了注销响应那块
@@ -295,7 +301,7 @@ void MainWindow::LoadSettings()
 
 void MainWindow::SaveSettings()
 {
-    s.sync();
+//    s.sync();
 }
 
 void MainWindow::SetMAC(const QString &m)
