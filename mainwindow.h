@@ -2,9 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QDialog>
+#include <QMenuBar>
 #include <QSettings>
 #include <QRegularExpressionValidator>
 #include <QSystemTrayIcon>
+#include <QTimer>
 #include <memory>
 #include "dogcomcontroller.h"
 
@@ -81,11 +83,13 @@ private:
     DogcomController dogcomController{};
 
     // 设置托盘中的注销按钮的可用性
-    void DisableLogOutButton(bool yes);
+    void DisableLogOutTrayContextMenu(bool yes);
 
-    // 窗口菜单
-    std::unique_ptr<QAction> aboutAction;
-    std::unique_ptr<QMenu> windowMenu;
+    // uptime
+    QTimer upTimer;
+    QElapsedTimer upElapsedTimer;
+
+    void UpdateTimer();
 
     void AboutDrcom();
 
@@ -95,7 +99,7 @@ private:
     std::unique_ptr<QAction> logOutAction;
     std::unique_ptr<QAction> quitAction;
     std::unique_ptr<QSystemTrayIcon> trayIcon;
-    QMenu *trayIconMenu;
+    std::unique_ptr<QMenu> trayIconMenu;
 
     QIcon offlineIcon, onlineIcon;
 

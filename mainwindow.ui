@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>242</width>
-    <height>237</height>
+    <width>327</width>
+    <height>278</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,132 +21,231 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QMenuBar" name="menuBar"/>
-   </item>
-   <item>
-    <widget class="QWidget" name="centralWidget" native="true">
+    <widget class="QStackedWidget" name="centralStackedWidget">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <layout class="QVBoxLayout" name="verticalLayoutOutside">
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <layout class="QGridLayout" name="gridLayoutInput">
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEditPass">
-            <property name="font">
-             <font>
-              <family>Lucida Sans Typewriter</family>
-             </font>
-            </property>
-            <property name="echoMode">
-             <enum>QLineEdit::Password</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="lineEditMAC"/>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="labelMAC">
-            <property name="text">
-             <string>MAC</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="labelAccount">
-            <property name="text">
-             <string>Account</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEditAccount"/>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="comboBoxMAC"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelPass">
-            <property name="text">
-             <string>Password</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QGridLayout" name="gridLayoutCheck">
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="checkBoxRemember">
-            <property name="text">
-             <string>Remember</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QCheckBox" name="checkBoxAutoLogin">
-            <property name="text">
-             <string>AutoLogin</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="checkBoxNotShowWelcome">
-            <property name="text">
-             <string>NotShowWelcomePage</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QCheckBox" name="checkBoxHideLoginWindow">
-            <property name="text">
-             <string>HideLoginWindow</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButtonLogin">
-          <property name="text">
-           <string>Login</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="labelIp">
-          <property name="text">
-           <string>Your IP address will be shown here</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignHCenter|Qt::AlignTop</set>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <widget class="QWidget" name="NotLoggedInPage">
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <layout class="QVBoxLayout" name="notLoggedInVerticalLayout">
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <layout class="QGridLayout" name="gridLayoutInput">
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="lineEditPass">
+             <property name="font">
+              <font>
+               <family>Lucida Sans Typewriter</family>
+              </font>
+             </property>
+             <property name="echoMode">
+              <enum>QLineEdit::Password</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="lineEditMAC"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelAccount">
+             <property name="text">
+              <string>Account</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lineEditAccount"/>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="comboBoxMAC">
+             <property name="editable">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelPass">
+             <property name="text">
+              <string>Password</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" rowspan="2">
+            <widget class="QLabel" name="labelMAC">
+             <property name="text">
+              <string>MAC</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="checkboxesGridLayout">
+           <item row="0" column="0">
+            <widget class="QCheckBox" name="checkBoxRemember">
+             <property name="text">
+              <string>Remember</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QCheckBox" name="checkBoxAutoLogin">
+             <property name="text">
+              <string>AutoLogin</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="checkBoxNotShowWelcome">
+             <property name="text">
+              <string>NotShowWelcomePage</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QCheckBox" name="checkBoxHideLoginWindow">
+             <property name="text">
+              <string>HideLoginWindow</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QCommandLinkButton" name="loginButton">
+           <property name="text">
+            <string>Login</string>
+           </property>
+           <property name="description">
+            <string>Click here to login</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="LoggedInPage">
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <layout class="QGridLayout" name="loggedInGridLayout">
+         <property name="leftMargin">
+          <number>7</number>
+         </property>
+         <property name="topMargin">
+          <number>7</number>
+         </property>
+         <property name="rightMargin">
+          <number>7</number>
+         </property>
+         <property name="bottomMargin">
+          <number>7</number>
+         </property>
+         <item row="1" column="0">
+          <widget class="QLabel" name="loggedInUsernameHintLabel">
+           <property name="text">
+            <string>Logged in as</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="2">
+          <widget class="QPushButton" name="webBrowserPushButton">
+           <property name="text">
+            <string>Open web browser...</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="ipHintLabel">
+           <property name="text">
+            <string>IP Address</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="uptimeHintLabel">
+           <property name="text">
+            <string>Uptime</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="loggedInUsernameLabel">
+           <property name="text">
+            <string>xxxx</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="uptimeLabel">
+           <property name="text">
+            <string>0:00:00</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="ipLabel">
+           <property name="text">
+            <string>0.0.0.0</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0" colspan="2">
+          <widget class="QPushButton" name="logoutPushButton">
+           <property name="text">
+            <string>&amp;Logout</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0" colspan="2">
+          <widget class="QLabel" name="alreadyLoggedInLabel">
+           <property name="text">
+            <string>Logged in now</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="aboutPushButton">
+     <property name="text">
+      <string>&amp;About</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="restartPushButton">
+     <property name="text">
+      <string>Re&amp;start</string>
+     </property>
     </widget>
    </item>
   </layout>
+  <zorder>centralStackedWidget</zorder>
+  <zorder>restartPushButton</zorder>
+  <zorder>aboutPushButton</zorder>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
@@ -156,7 +255,6 @@
   <tabstop>lineEditMAC</tabstop>
   <tabstop>checkBoxRemember</tabstop>
   <tabstop>checkBoxAutoLogin</tabstop>
-  <tabstop>pushButtonLogin</tabstop>
  </tabstops>
  <resources/>
  <connections/>

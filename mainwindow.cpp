@@ -1,5 +1,7 @@
 ﻿#include <QtNetwork/QNetworkInterface>
 #include <QApplication>
+#include <QElapsedTimer>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QValidator>
 #include <QSettings>
@@ -8,6 +10,7 @@
 #include <QUrl>
 #include <QCloseEvent>
 #include <QProcess>
+#include <chrono>
 #include <cryptopp/modes.h>
 #include <cryptopp/sm4.h>
 #include <cryptopp/filters.h>
@@ -30,7 +33,9 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
         macValidator(QRegularExpression("^[0-9a-fA-F]{2}([:-][0-9a-fA-F]{2}){5}$")),
         trayIconMenu(new QMenu(this)),
         onlineIcon(":/images/online.png"),
-        offlineIcon(":/images/offline.png")
+        offlineIcon(":/images/offline.png"),
+        currState(State::OFFLINE),
+        upTimer(this)
 {
     // 关机时接收退出信号，释放socket
     QObject::connect(app, &QApplication::aboutToQuit, this, &MainWindow::QuitDrcom);
@@ -38,10 +43,11 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     qDebug() << "MainWindow constructor";
     ui->setupUi(this);
 
-    currState = State::OFFLINE;
-
     // 记住窗口大小功能
     restoreGeometry(s.value(ID_MAIN_WINDOW_GEOMETRY).toByteArray());
+
+    // index 0 is not-login panel
+    ui->centralStackedWidget->setCurrentIndex(0);
 
     // 获取mac地址
     for (const QNetworkInterface &i: QNetworkInterface::allInterfaces()) {
@@ -52,8 +58,9 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     ui->comboBoxMAC->addItem(CUSTOM_MAC);
 
     // 重启功能
-    restartAction = std::make_unique<QAction>(tr("Re&start"), this);
-    connect(restartAction.get(), &QAction::triggered, this, &MainWindow::RestartDrcomByUser);
+    connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUser);
+    connect(ui->loginButton, &QCommandLinkButton::clicked, this, &MainWindow::on_pushButtonLogin_clicked);
+    connect(ui->logoutPushButton, &QPushButton::clicked, this, &MainWindow::UserLogOut);
 
     // 创建托盘菜单和图标
     // 托盘菜单选项
@@ -74,7 +81,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
 
     // 新建托盘图标
     trayIcon = std::make_unique<QSystemTrayIcon>(this);
-    trayIcon->setContextMenu(trayIconMenu);
+    trayIcon->setContextMenu(trayIconMenu.get());
 
     // 设置托盘菜单响应函数
     connect(trayIcon.get(), &QSystemTrayIcon::activated, this, &MainWindow::IconActivated);
@@ -84,14 +91,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     trayIcon->show();
 
     // 创建窗口菜单
-    aboutAction = std::make_unique<QAction>(tr("&About"), this);
-    connect(aboutAction.get(), &QAction::triggered, this, &MainWindow::AboutDrcom);
-    windowMenu = std::make_unique<QMenu>(tr("&Help"), this);
-    windowMenu->addAction(aboutAction.get());
-    windowMenu->addAction(logOutAction.get());
-    ui->menuBar->addMenu(windowMenu.get());
-    // 重启是个专门的菜单按钮
-    ui->menuBar->addAction(restartAction.get());
+    connect(ui->aboutPushButton, &QPushButton::clicked, this, &MainWindow::AboutDrcom);
 
     // 读取配置文件
     LoadSettings();
@@ -101,18 +101,33 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     connect(&dogcomController, &DogcomController::HaveLoggedIn, this, &MainWindow::HandleLoggedIn);
     connect(&dogcomController, &DogcomController::HaveObtainedIp, this, &MainWindow::HandleIpAddress);
 
+    // timer
+    upTimer.setTimerType(Qt::TimerType::VeryCoarseTimer);
+    connect(&upTimer, &QTimer::timeout, this, &MainWindow::UpdateTimer);
+
     // 验证手动输入的mac地址
     ui->lineEditMAC->setValidator(&macValidator);
 
     // 尚未登录 不可注销
-    DisableLogOutButton(true);
+    DisableLogOutTrayContextMenu(true);
 
     // 自动登录功能
     int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
     qDebug() << "MainWindow constructor: restartTimes = " << restartTimes;
     if (restartTimes > 0 || s.value(ID_AUTO_LOGIN, false).toBool()) { // 尝试自动重启中
-        emit ui->pushButtonLogin->click();
+        emit ui->loginButton->click();
     }
+}
+
+void MainWindow::UpdateTimer()
+{
+    using namespace std::chrono;
+
+    milliseconds d(upElapsedTimer.elapsed());
+    auto hr = duration_cast<hours>(d).count();
+    auto min = duration_cast<minutes>(d).count() % 60;
+    auto sec = duration_cast<seconds>(d).count() % 60;
+    ui->uptimeLabel->setText(QString("%1:%2:%3").arg(hr).arg(min, 2, 10, QChar('0')).arg(sec, 2, 10, QChar('0')));
 }
 
 void MainWindow::AboutDrcom()
@@ -265,6 +280,8 @@ void MainWindow::LoadSettings()
     ui->lineEditAccount->setText(account);
     ui->lineEditPass->setText(password);
     SetMAC(macAddr);
+    ui->loginButton->setText(tr("Login"));
+    ui->loginButton->setDescription(tr("Click here to login"));
 
     ui->checkBoxRemember->setCheckState(BooleanToCheckState(remember));
     ui->checkBoxAutoLogin->setCheckState(BooleanToCheckState(autoLogin));
@@ -347,7 +364,7 @@ void MainWindow::SetDisableInput(bool yes)
     ui->checkBoxAutoLogin->setDisabled(yes);
     ui->checkBoxNotShowWelcome->setDisabled(yes);
     ui->checkBoxHideLoginWindow->setDisabled(yes);
-    ui->pushButtonLogin->setDisabled(yes);
+    ui->loginButton->setDisabled(yes);
 
     if (!yes) {
         // 要启用输入框
@@ -360,7 +377,6 @@ void MainWindow::SetDisableInput(bool yes)
 
 void MainWindow::SetIcon(bool online)
 {
-    QIcon icon;
     QString toolTip;
     if (online) {
         // 设置彩色图标
@@ -392,7 +408,7 @@ void MainWindow::WriteInputs()
 void MainWindow::HandleOffline(LoginResult reason)
 {
     currState = State::OFFLINE;
-    ui->pushButtonLogin->setText(tr("Login"));
+
     switch (reason) {
         case LoginResult::USER_LOGOUT: {
             if (quit) {
@@ -406,7 +422,6 @@ void MainWindow::HandleOffline(LoginResult reason)
                 qDebug() << "Restart done.";
                 return;
             }
-            QMessageBox::information(this, tr("Logout succeed"), tr("Logout succeed"));
             break;
         }
         case LoginResult::BIND_FAILED: {
@@ -418,7 +433,8 @@ void MainWindow::HandleOffline(LoginResult reason)
             // 弹出一个提示框，带一个直接重启客户端的按钮
             QMessageBox msgBox;
             msgBox.setText(tr("Login failed") + " " + tr("Challenge failed. Please check your connection:)") + " " +
-                           tr("Attention that you should connect to wifi or wired firstly and then start the drcom client. If you have connected, you may restart drcom to solve the problem.")
+                           tr("Attention that you should connect to wifi or wired firstly and then start the drcom "
+                              "client. If you have connected, you may restart drcom to solve the problem.")
                            + " " + tr("Restart DrCOM?"));
             QAbstractButton *buttonYes = msgBox.addButton(tr("Yes"), QMessageBox::YesRole);
             msgBox.addButton(tr("Nope"), QMessageBox::NoRole);
@@ -496,17 +512,14 @@ void MainWindow::HandleOffline(LoginResult reason)
             }
 
             // 弹出一个提示框，带一个直接重启客户端的按钮
-            QMessageBox msgBox;
-            msgBox.setText(tr("You have been offline") + " " + tr("Time out, please check your connection")
-                           + " " +
-                           tr("The DrCOM client will try to restart to solve some unstable problems but the function relies on \"remember me\"")
-                           + " " +
-                           tr("Due to some reasons, you should connect to wifi or wired firstly and then start the drcom client. So you may not login until you restart DrCOM :D")
-                           + " " + tr("Restart DrCOM?"));
-            QAbstractButton *pButtonYes = msgBox.addButton(tr("Yes"), QMessageBox::YesRole);
-            msgBox.addButton(tr("Nope"), QMessageBox::NoRole);
-            msgBox.exec();
-            if (msgBox.clickedButton() == pButtonYes) {
+            auto boxText = tr("You have been offline") + " " + tr("Time out, please check your connection") + " " +
+                           tr("The DrCOM client will try to restart to solve some unstable problems but the function "
+                           "relies on \"remember me\"") + " " +
+                           tr("Due to some reasons, you should connect to wifi or wired firstly and then start the "
+                              "drcom client. So you may not login until you restart DrCOM :D") + " " +
+                              tr("Restart DrCOM?");
+
+            if (QMessageBox::question(this, tr("You have been offline"), boxText) == QMessageBox::StandardButton::Yes) {
                 qDebug() << "Restart DrCOM confirmed in case OfflineReason::TIMEOUT";
                 RestartDrcomByUser();
             }
@@ -529,13 +542,18 @@ void MainWindow::HandleOffline(LoginResult reason)
     SetDisableInput(false);
     SetIcon(false);
     // 禁用注销按钮
-    DisableLogOutButton(true);
+    DisableLogOutTrayContextMenu(true);
     // 显示出窗口
     ShowLoginWindow();
 }
 
 void MainWindow::HandleLoggedIn()
 {
+    // setup timer
+    upElapsedTimer.restart();
+    upTimer.start(10 * 1000); // update every 10 sec
+    QTimer::singleShot(0, this, &MainWindow::UpdateTimer);
+
     int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
     qDebug() << "HandleLoggedIn: restartTimes = " << restartTimes;
 
@@ -552,7 +570,13 @@ void MainWindow::HandleLoggedIn()
     SaveSettings();
     SetIcon(true);
     // 启用注销按钮
-    DisableLogOutButton(false);
+    DisableLogOutTrayContextMenu(false);
+
+    // 1 is logged-in info panel
+    ui->centralStackedWidget->setCurrentIndex(1);
+
+    // set username
+    ui->loggedInUsernameLabel->setText(ui->lineEditAccount->text());
 
     s.setValue(ID_RESTART_TIMES, 0);
     qDebug() << "HandleLoggedIn: reset restartTimes";
@@ -560,20 +584,31 @@ void MainWindow::HandleLoggedIn()
 
 void MainWindow::HandleIpAddress(const QString &ip)
 {
-    ui->labelIp->setText(ip);
+    ui->ipLabel->setText(ip);
 }
 
 void MainWindow::UserLogOut()
 {
+    if (QMessageBox::question(this, tr("Logout"), tr("Are you sure you want to logout?")) !=
+        QMessageBox::StandardButton::Yes) {
+        return;
+    }
+
+    // reset timer
+    upTimer.stop();
+    upElapsedTimer.restart();
     // 用户主动注销
     dogcomController.LogOut();
     // 注销后应该是想重新登录或者换个号，因此显示出用户界面
     restoreAction->activate(restoreAction->Trigger);
     // 禁用注销按钮
-    DisableLogOutButton(true);
+    DisableLogOutTrayContextMenu(true);
+
+    // switch to logged-out panel
+    ui->centralStackedWidget->setCurrentIndex(0);
 }
 
-void MainWindow::DisableLogOutButton(bool yes)
+void MainWindow::DisableLogOutTrayContextMenu(bool yes)
 {
     if (yes) {
         logOutAction->setDisabled(true);
@@ -595,5 +630,4 @@ void MainWindow::on_checkBoxHideLoginWindow_toggled(bool checked)
 MainWindow::~MainWindow()
 {
     delete ui;
-    delete trayIconMenu;
 }
