@@ -19,8 +19,6 @@ set_source_files_properties(ts/DrcomJluQt_zh_CN.ts PROPERTIES OUTPUT_LOCATION "$
 qt_add_lupdate(DrcomJluQt SOURCES ${SC_FILES} ${UI_FILES} TS_FILES ts/DrcomJluQt_zh_CN.ts)
 qt_add_lrelease(DrcomJluQt TS_FILES ts/DrcomJluQt_zh_CN.ts QM_FILES_OUTPUT_VARIABLE QM_FILES)
 
-install(FILES ${QM_FILES} DESTINATION ts)
-
 target_link_libraries(DrcomJluQt cryptopp)
 target_link_libraries(DrcomJluQt Qt6::Gui Qt6::Widgets Qt6::Network)
 set_target_properties(DrcomJluQt PROPERTIES WIN32_EXECUTABLE ON)
