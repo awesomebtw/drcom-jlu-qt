@@ -31,10 +31,7 @@ enum class LoginResult {
     SET_SOCKET_REUSE,
 };
 
-constexpr const int PORT_BIND = 61440;
-constexpr const int PORT_DEST = 61440;
-constexpr const char SERVER_IP[] = "10.100.61.3";
-const QString SETTINGS_FILE_NAME = "DrCOM_JLU_Qt.ini";
+const QString SETTINGS_FILE_NAME = "DrComJluQt.ini";
 const QString ID_ACCOUNT = "account";
 const QString ID_PASSWORD = "password";
 const QString ID_MAC = "mac";

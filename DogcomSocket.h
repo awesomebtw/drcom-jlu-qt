@@ -38,6 +38,10 @@ private:
     struct sockaddr_in bind_addr{};
     struct sockaddr_in dest_addr{};
 
+    static constexpr const int PORT_BIND = 61440;
+    static constexpr const int PORT_DEST = 61440;
+    static constexpr const char SERVER_IP[] = "10.100.61.3";
+
 public:
     DogcomSocket() = default;
 
