@@ -80,6 +80,11 @@ int main(int argc, char *argv[])
     }
     semaphore.release();
 
+    QApplication::setApplicationName("DrcomJluQt");
+    QApplication::setApplicationDisplayName(QApplication::tr("DrCOM JLU Qt"));
+    QApplication::setApplicationVersion("1.0.1");
+    QApplication::setQuitOnLastWindowClosed(false);
+
     if (isRunning) {
         QMessageBox::warning(nullptr, "", QApplication::tr("The application is already running."));
         return 1;
@@ -87,11 +92,6 @@ int main(int argc, char *argv[])
 
     std::ios::sync_with_stdio(false);
     qInstallMessageHandler(LogMsgOutput);
-
-    QApplication::setApplicationName("DrcomJluQt");
-    QApplication::setApplicationDisplayName(QApplication::tr("DrCOM JLU Qt"));
-    QApplication::setApplicationVersion("1.0.1");
-    QApplication::setQuitOnLastWindowClosed(false);
 
     qDebug() << "...main...";
 

@@ -11,19 +11,18 @@
 #include <QCloseEvent>
 #include <QProcess>
 #include <chrono>
-#include <cryptopp/modes.h>
-#include <cryptopp/sm4.h>
-#include <cryptopp/filters.h>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "constants.h"
+#include "utils.h"
 
-// key for encryption algorithm
-constexpr const char encKey[] = "Although never is often better than *right* now.\n"
-                                "If the implementation is hard to explain, it's a bad idea.\n"
-                                "If the implementation is easy to explain, it may be a good idea.\n"
-                                "Namespaces are one honking great idea -- let's do more of those!";
+constexpr const int RETRY_TIMES = 3;
+
+enum {
+    NOT_LOGGED_IN_PAGE_INDEX = 0,
+    LOGGED_IN_PAGE_INDEX = 1,
+};
 
 MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
         QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint),
@@ -31,13 +30,19 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
         app(parentApp),
         s(SETTINGS_FILE_NAME, QSettings::IniFormat),
         macValidator(QRegularExpression("^[0-9a-fA-F]{2}([:-][0-9a-fA-F]{2}){5}"), this),
+        // 创建托盘菜单和图标
+        trayIcon(new QSystemTrayIcon(this)),
         trayIconMenu(new QMenu(this)),
+        restoreAction(new QAction(tr("&Restore"), this)),
+        logOutAction(new QAction(tr("&Logout"), this)),
+        restartAction(new QAction(tr("Re&start"), this)),
+        quitAction(new QAction(tr("&Quit"), this)),
         onlineIcon(":/images/online.png"),
         offlineIcon(":/images/offline.png"),
         currState(State::OFFLINE),
         upTimer(this)
 {
-    // 关机时接收退出信号，释放socket
+    // 关机时接收退出信号，释放 socket
     QObject::connect(app, &QApplication::aboutToQuit, this, &MainWindow::QuitDrcom);
 
     qDebug() << "MainWindow constructor";
@@ -46,34 +51,36 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     // 记住窗口大小功能
     restoreGeometry(s.value(ID_MAIN_WINDOW_GEOMETRY).toByteArray());
 
-    // index 0 is not-login panel
-    ui->centralStackedWidget->setCurrentIndex(0);
-
-    // 获取mac地址
+    // put mac addresses to combobox
     for (const QNetworkInterface &i: QNetworkInterface::allInterfaces()) {
         if (!i.flags().testFlag(QNetworkInterface::IsLoopBack)) {
             ui->comboBoxMAC->addItem(i.hardwareAddress() + " [" + i.humanReadableName() + ']', i.hardwareAddress());
         }
     }
 
-    // 重启功能
-    connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUserWithConfirm);
+    // set validator for mac address
+    ui->comboBoxMAC->lineEdit()->setValidator(&macValidator);
 
-    // Login, logout and browser functionality
+    // connect to controller's login logout signals
+    connect(&dogcomController, &DogcomController::HaveBeenOffline, this, &MainWindow::HandleOffline);
+    connect(&dogcomController, &DogcomController::HaveLoggedIn, this, &MainWindow::HandleLoggedIn);
+    connect(&dogcomController, &DogcomController::HaveObtainedIp, this, &MainWindow::HandleIpAddress);
+
+    // all buttons' functionality
+    connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUserWithConfirm);
     connect(ui->loginButton, &QCommandLinkButton::clicked, this, &MainWindow::LoginButtonClicked);
     connect(ui->logoutButton, &QCommandLinkButton::clicked, this, &MainWindow::UserLogOut);
     connect(ui->browserButton, &QCommandLinkButton::clicked, this, &MainWindow::BrowserButtonClicked);
+    connect(ui->aboutPushButton, &QPushButton::clicked, this, &MainWindow::AboutDrcom);
 
-    // 创建托盘菜单和图标
     // 托盘菜单选项
-    restoreAction = std::make_unique<QAction>(tr("&Restore"), this);
     connect(restoreAction.get(), &QAction::triggered, this, &MainWindow::ShowLoginWindow);
-    logOutAction = std::make_unique<QAction>(tr("&Logout"), this);
     connect(logOutAction.get(), &QAction::triggered, this, &MainWindow::UserLogOut);
-    restartAction = std::make_unique<QAction>(tr("Re&start"), this);
     connect(restartAction.get(), &QAction::triggered, this, &MainWindow::RestartDrcomByUserWithConfirm);
-    quitAction = std::make_unique<QAction>(tr("&Quit"), this);
     connect(quitAction.get(), &QAction::triggered, this, &MainWindow::QuitDrcom);
+
+    // 设置托盘菜单响应函数
+    connect(trayIcon.get(), &QSystemTrayIcon::activated, this, &MainWindow::IconActivated);
 
     // 新建菜单
     trayIconMenu->addAction(restoreAction.get());
@@ -84,68 +91,29 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     trayIconMenu->addAction(quitAction.get());
 
     // 新建托盘图标
-    trayIcon = std::make_unique<QSystemTrayIcon>(this);
     trayIcon->setContextMenu(trayIconMenu.get());
 
-    // 设置托盘菜单响应函数
-    connect(trayIcon.get(), &QSystemTrayIcon::activated, this, &MainWindow::IconActivated);
     // 设置托盘图标和窗口图标
     SetIcon(false);
-    // 显示出来托盘图标
     trayIcon->show();
 
-    // about
-    connect(ui->aboutPushButton, &QPushButton::clicked, this, &MainWindow::AboutDrcom);
-
-    // 读取配置文件
-    LoadSettings();
-
-    // 设置回调函数
-    connect(&dogcomController, &DogcomController::HaveBeenOffline, this, &MainWindow::HandleOffline);
-    connect(&dogcomController, &DogcomController::HaveLoggedIn, this, &MainWindow::HandleLoggedIn);
-    connect(&dogcomController, &DogcomController::HaveObtainedIp, this, &MainWindow::HandleIpAddress);
+    // hardcode proxy to focus to the right widget
+    ui->notLoggedInPage->setFocusProxy(ui->lineEditAccount);
+    ui->loggedInPage->setFocusProxy(ui->browserButton);
+    ui->centralStackedWidget->setCurrentIndex(NOT_LOGGED_IN_PAGE_INDEX);
 
     // timer
     upTimer.setTimerType(Qt::TimerType::VeryCoarseTimer);
     connect(&upTimer, &QTimer::timeout, this, &MainWindow::UpdateTimer);
 
-    // 验证手动输入的mac地址
-    ui->comboBoxMAC->lineEdit()->setValidator(&macValidator);
-
-    // 尚未登录 不可注销
-    DisableLogOutTrayContextMenu(true);
+    LoadSettings(); // 读取配置文件
+    logOutAction->setEnabled(false); // 尚未登录不可注销
 
     // 自动登录功能
     int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
-    qDebug() << "restartTimes = " << restartTimes;
     if (restartTimes > 0 || s.value(ID_AUTO_LOGIN, false).toBool()) { // 尝试自动重启中
         emit ui->loginButton->click();
     }
-}
-
-void MainWindow::UpdateTimer()
-{
-    using namespace std::chrono;
-
-    milliseconds d(upTimer.intervalAsDuration() * uptimeCounter);
-    auto hr = duration_cast<hours>(d).count();
-    auto min = duration_cast<minutes>(d).count() % 60;
-    auto sec = duration_cast<seconds>(d).count() % 60;
-    ui->uptimeLabel->setText(QString("%1:%2:%3").arg(hr).arg(min, 2, 10, QChar('0')).arg(sec, 2, 10, QChar('0')));
-
-    uptimeCounter++;
-}
-
-void MainWindow::AboutDrcom()
-{
-    QMessageBox b;
-    b.setIcon(QMessageBox::Information);
-    b.setWindowTitle(tr("About"));
-    b.setInformativeText("(c) All rights reserved.");
-    b.setText(QApplication::applicationName() + " " + QApplication::applicationVersion());
-    b.setDetailedText("Forked by xxx, repo: https://github.com/ /drcom-jlu-qt\n\n"
-                      "Original repo: https://github.com/code4lala/drcom-jlu-qt");
-    b.exec();
 }
 
 void MainWindow::closeEvent(QCloseEvent *)
@@ -155,6 +123,17 @@ void MainWindow::closeEvent(QCloseEvent *)
     if (currState == State::OFFLINE) {
         QuitDrcom();
     }
+}
+
+void MainWindow::showEvent(QShowEvent *e)
+{
+    if (focusWidget()) {
+        focusWidget()->clearFocus();
+    }
+    // ensure current focus widget is not "about" button
+    ui->centralStackedWidget->currentWidget()->setFocus();
+
+    QDialog::showEvent(e);
 }
 
 void MainWindow::ShowLoginWindow()
@@ -225,73 +204,10 @@ void MainWindow::IconActivated(QSystemTrayIcon::ActivationReason reason)
     }
 }
 
-Qt::CheckState MainWindow::BooleanToCheckState(bool val)
-{
-    if (val) {
-        return Qt::CheckState::Checked;
-    } else {
-        return Qt::CheckState::Unchecked;
-    }
-}
-
-bool MainWindow::CheckStateToBoolean(Qt::CheckState val)
-{
-    return val != Qt::CheckState::Unchecked;
-}
-
-QByteArray MainWindow::Encrypt(QByteArray arr)
-{
-    using namespace CryptoPP;
-
-    SecByteBlock iv(SM4::DEFAULT_KEYLENGTH);
-    memset(iv, 0, iv.size());
-    CBC_CTS_Mode<SM4>::Encryption e;
-    e.SetKeyWithIV(reinterpret_cast<const CryptoPP::byte *>(encKey), SM4::DEFAULT_KEYLENGTH, iv);
-
-    StreamTransformationFilter encryptor(e, nullptr);
-    encryptor.Put(reinterpret_cast<const CryptoPP::byte *>(arr.data()), arr.length());
-    for (auto i = arr.length(); i <= SM4::DEFAULT_KEYLENGTH; i++) {
-        encryptor.Put(CryptoPP::byte('\0')); // padding
-    }
-    encryptor.MessageEnd();
-
-    QByteArray res;
-    if (encryptor.AnyRetrievable()) {
-        res.resize(static_cast<qsizetype>(encryptor.MaxRetrievable()));
-        encryptor.Get(reinterpret_cast<CryptoPP::byte *>(&res[0]), res.length());
-    }
-
-    return res;
-}
-
-QByteArray MainWindow::Decrypt(QByteArray arr)
-{
-    using namespace CryptoPP;
-
-    SecByteBlock iv(SM4::DEFAULT_KEYLENGTH);
-    memset(iv, 0, iv.size());
-
-    CBC_CTS_Mode<SM4>::Decryption d;
-    d.SetKeyWithIV(reinterpret_cast<const byte *>(encKey), SM4::DEFAULT_KEYLENGTH, iv);
-
-    StreamTransformationFilter decryptor(d, nullptr);
-    decryptor.Put(reinterpret_cast<const byte *>(arr.data()), arr.length());
-    decryptor.MessageEnd();
-
-    QByteArray res;
-    if (decryptor.AnyRetrievable()) {
-        res.resize(static_cast<qsizetype>(decryptor.MaxRetrievable()));
-        decryptor.Get(reinterpret_cast<byte *>(&res[0]), res.length());
-        res.resize(static_cast<qsizetype>(qstrlen(res.data()))); // remove padding NULs
-    }
-
-    return res;
-}
-
 void MainWindow::LoadSettings()
 {
     auto account = s.value(ID_ACCOUNT, "").toString();
-    auto password = Decrypt(s.value(ID_PASSWORD, "").toByteArray());
+    auto password = Utils::Decrypt(s.value(ID_PASSWORD, "").toByteArray());
     auto macAddr = s.value(ID_MAC, "").toString();
     auto remember = s.value(ID_REMEMBER, false).toBool();
     auto hideWindow = s.value(ID_HIDE_WINDOW, false).toBool();
@@ -303,10 +219,10 @@ void MainWindow::LoadSettings()
     SetMAC(macAddr);
     ui->loginButton->setText(tr("Login"));
 
-    ui->checkBoxRemember->setCheckState(BooleanToCheckState(remember));
-    ui->checkBoxAutoLogin->setCheckState(BooleanToCheckState(autoLogin));
-    ui->checkBoxHideLoginWindow->setCheckState(BooleanToCheckState(hideWindow));
-    ui->checkBoxNotShowWelcome->setCheckState(BooleanToCheckState(notShowWelcome));
+    ui->checkBoxRemember->setCheckState(Utils::BooleanToCheckState(remember));
+    ui->checkBoxAutoLogin->setCheckState(Utils::BooleanToCheckState(autoLogin));
+    ui->checkBoxHideLoginWindow->setCheckState(Utils::BooleanToCheckState(hideWindow));
+    ui->checkBoxNotShowWelcome->setCheckState(Utils::BooleanToCheckState(notShowWelcome));
 }
 
 void MainWindow::SaveSettings()
@@ -349,7 +265,7 @@ void MainWindow::LoginButtonClicked()
 
     auto macAddr = s.value(ID_MAC, "").toString();
     auto account = s.value(ID_ACCOUNT, "").toString();
-    auto password = Decrypt(s.value(ID_PASSWORD, "").toByteArray());
+    auto password = Utils::Decrypt(s.value(ID_PASSWORD, "").toByteArray());
 
     if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
         QMessageBox::warning(this, "", tr("Fields cannot be empty!"));
@@ -398,30 +314,27 @@ void MainWindow::WriteInputs()
 {
     s.setValue(ID_ACCOUNT, ui->lineEditAccount->text());
     s.setValue(ID_PASSWORD,
-               Encrypt(ui->lineEditPass->text().toLatin1())); // since all characters in a password are ascii
+               Utils::Encrypt(ui->lineEditPass->text().toLatin1())); // since all characters in a password are ascii
     if (ui->comboBoxMAC->currentData().isNull()) {
         s.setValue(ID_MAC, ui->comboBoxMAC->currentText().toUpper());
     } else {
         s.setValue(ID_MAC, ui->comboBoxMAC->currentData().toString().toUpper());
     }
-    s.setValue(ID_REMEMBER, CheckStateToBoolean(ui->checkBoxRemember->checkState()));
-    s.setValue(ID_AUTO_LOGIN, CheckStateToBoolean(ui->checkBoxAutoLogin->checkState()));
-    s.setValue(ID_NOT_SHOW_WELCOME, CheckStateToBoolean(ui->checkBoxNotShowWelcome->checkState()));
-    s.setValue(ID_HIDE_WINDOW, CheckStateToBoolean(ui->checkBoxHideLoginWindow->checkState()));
+    s.setValue(ID_REMEMBER, Utils::CheckStateToBoolean(ui->checkBoxRemember->checkState()));
+    s.setValue(ID_AUTO_LOGIN, Utils::CheckStateToBoolean(ui->checkBoxAutoLogin->checkState()));
+    s.setValue(ID_NOT_SHOW_WELCOME, Utils::CheckStateToBoolean(ui->checkBoxNotShowWelcome->checkState()));
+    s.setValue(ID_HIDE_WINDOW, Utils::CheckStateToBoolean(ui->checkBoxHideLoginWindow->checkState()));
 }
 
 void MainWindow::HandleOfflineUserLogout(const QString &string) const
 {
     if (currState == State::ABOUT_TO_QUIT) {
         qApp->quit();
-        return;
-    }
-    if (currState == State::ABOUT_TO_RESTART) {
+    } else if (currState == State::ABOUT_TO_RESTART) {
         qDebug() << "Restarting Drcom...";
         QProcess::startDetached(qApp->applicationFilePath(), qApp->arguments());
         qApp->quit();
         qDebug() << "Restart done.";
-        return;
     }
 }
 
@@ -561,7 +474,7 @@ void MainWindow::HandleOffline(LoginResult reason)
     SetDisableInput(false);
     SetIcon(false);
     // 禁用注销按钮
-    DisableLogOutTrayContextMenu(true);
+    logOutAction->setEnabled(false);
     // 显示出窗口
     ShowLoginWindow();
 }
@@ -588,10 +501,9 @@ void MainWindow::HandleLoggedIn()
     SaveSettings();
     SetIcon(true);
     // 启用注销按钮
-    DisableLogOutTrayContextMenu(false);
+    logOutAction->setEnabled(true);
 
-    // 1 is logged-in info panel
-    ui->centralStackedWidget->setCurrentIndex(1);
+    ui->centralStackedWidget->setCurrentIndex(LOGGED_IN_PAGE_INDEX);
 
     // set username
     ui->loggedInUsernameLabel->setText(ui->lineEditAccount->text());
@@ -624,19 +536,35 @@ void MainWindow::UserLogOut()
     // 注销后应该是想重新登录或者换个号，因此显示出用户界面
     restoreAction->activate(restoreAction->Trigger);
     // 禁用注销按钮
-    DisableLogOutTrayContextMenu(true);
+    logOutAction->setEnabled(false);
 
     // switch to logged-out panel
-    ui->centralStackedWidget->setCurrentIndex(0);
+    ui->centralStackedWidget->setCurrentIndex(NOT_LOGGED_IN_PAGE_INDEX);
 }
 
-void MainWindow::DisableLogOutTrayContextMenu(bool yes)
+void MainWindow::UpdateTimer()
 {
-    if (yes) {
-        logOutAction->setDisabled(true);
-    } else {
-        logOutAction->setEnabled(true);
-    }
+    using namespace std::chrono;
+
+    milliseconds d(upTimer.intervalAsDuration() * uptimeCounter);
+    auto hr = duration_cast<hours>(d).count();
+    auto min = duration_cast<minutes>(d).count() % 60;
+    auto sec = duration_cast<seconds>(d).count() % 60;
+    ui->uptimeLabel->setText(QString("%1:%2:%3").arg(hr).arg(min, 2, 10, QChar('0')).arg(sec, 2, 10, QChar('0')));
+
+    uptimeCounter++;
+}
+
+void MainWindow::AboutDrcom()
+{
+    QMessageBox b;
+    b.setIcon(QMessageBox::Information);
+    b.setWindowTitle(tr("About"));
+    b.setText(QApplication::applicationName() + " " + QApplication::applicationDisplayName());
+    b.setInformativeText(QApplication::applicationVersion());
+    b.setDetailedText("Forked by btw, repo: https://github.com/awesometw/drcom-jlu-qt\n\n"
+                      "Original repo: https://github.com/code4lala/drcom-jlu-qt");
+    b.exec();
 }
 
 void MainWindow::on_checkBoxNotShowWelcome_toggled(bool checked)

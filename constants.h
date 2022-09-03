@@ -41,6 +41,5 @@ const QString ID_HIDE_WINDOW = "showWindow";
 const QString ID_NOT_SHOW_WELCOME = "dontShowWelcome";
 const QString ID_RESTART_TIMES = "restartTimes";
 const QString ID_MAIN_WINDOW_GEOMETRY = "mainWindowGeometry";
-constexpr const int RETRY_TIMES = 3;
 
 #endif // CONSTANTS_H

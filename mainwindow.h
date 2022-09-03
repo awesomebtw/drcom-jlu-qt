@@ -30,11 +30,9 @@ public:
 
     void closeEvent(QCloseEvent *) override;
 
+    void showEvent(QShowEvent *e) override;
+
 private slots:
-
-    void on_checkBoxAutoLogin_toggled(bool checked);
-
-    void on_checkBoxRemember_toggled(bool checked);
 
     void LoginButtonClicked();
 
@@ -43,6 +41,10 @@ private slots:
     static void BrowserButtonClicked();
 
     void UserLogOut();
+
+    void on_checkBoxAutoLogin_toggled(bool checked);
+
+    void on_checkBoxRemember_toggled(bool checked);
 
     void on_checkBoxNotShowWelcome_toggled(bool checked);
 
@@ -84,16 +86,13 @@ private:
     QRegularExpressionValidator macValidator;
     DogcomController dogcomController{};
 
-    // 设置托盘中的注销按钮的可用性
-    void DisableLogOutTrayContextMenu(bool yes);
-
     // uptime
     QTimer upTimer;
     size_t uptimeCounter{};
 
     void UpdateTimer();
 
-    void AboutDrcom();
+    static void AboutDrcom();
 
     // 托盘图标
     std::unique_ptr<QAction> restartAction;
@@ -105,21 +104,9 @@ private:
 
     QIcon offlineIcon, onlineIcon;
 
-    void CreateActions();
-
-    void CreateTrayIcon();
-
     void SetIcon(bool online);
 
     void WriteInputs();
-
-    static Qt::CheckState BooleanToCheckState(bool val);
-
-    bool CheckStateToBoolean(Qt::CheckState val);
-
-    static QByteArray Encrypt(QByteArray arr);
-
-    static QByteArray Decrypt(QByteArray arr);
 
     void LoadSettings();
 

@@ -48,7 +48,7 @@
      <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="NotLoggedInPage">
+     <widget class="QWidget" name="notLoggedInPage">
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
         <layout class="QVBoxLayout" name="notLoggedInVerticalLayout">
@@ -166,7 +166,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="LoggedInPage">
+     <widget class="QWidget" name="loggedInPage">
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
         <layout class="QGridLayout" name="loggedInGridLayout">
@@ -272,6 +272,13 @@
   <tabstop>comboBoxMAC</tabstop>
   <tabstop>checkBoxRemember</tabstop>
   <tabstop>checkBoxAutoLogin</tabstop>
+  <tabstop>checkBoxNotShowWelcome</tabstop>
+  <tabstop>checkBoxHideLoginWindow</tabstop>
+  <tabstop>loginButton</tabstop>
+  <tabstop>browserButton</tabstop>
+  <tabstop>logoutButton</tabstop>
+  <tabstop>aboutPushButton</tabstop>
+  <tabstop>restartPushButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>
