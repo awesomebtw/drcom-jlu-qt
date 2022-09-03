@@ -57,7 +57,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     }
 
     // 重启功能
-    connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUser);
+    connect(ui->restartPushButton, &QPushButton::clicked, this, &MainWindow::RestartDrcomByUserWithConfirm);
 
     // Login, logout and browser functionality
     connect(ui->loginButton, &QCommandLinkButton::clicked, this, &MainWindow::LoginButtonClicked);
@@ -71,7 +71,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     logOutAction = std::make_unique<QAction>(tr("&Logout"), this);
     connect(logOutAction.get(), &QAction::triggered, this, &MainWindow::UserLogOut);
     restartAction = std::make_unique<QAction>(tr("Re&start"), this);
-    connect(restartAction.get(), &QAction::triggered, this, &MainWindow::RestartDrcomByUser);
+    connect(restartAction.get(), &QAction::triggered, this, &MainWindow::RestartDrcomByUserWithConfirm);
     quitAction = std::make_unique<QAction>(tr("&Quit"), this);
     connect(quitAction.get(), &QAction::triggered, this, &MainWindow::QuitDrcom);
 
@@ -142,9 +142,10 @@ void MainWindow::AboutDrcom()
     b.setWindowIcon(onlineIcon);
     b.setIcon(QMessageBox::Information);
     b.setWindowTitle(tr("About"));
-    b.setInformativeText(QApplication::applicationVersion());
-    b.setText(qAppName());
-    b.setDetailedText("Forked by xxx, repo: xxx\n\nOriginal repo: https://github.com/code4lala/drcom-jlu-qt");
+    b.setInformativeText("(c) All rights reserved.");
+    b.setText(QApplication::applicationName() + " " + QApplication::applicationVersion());
+    b.setDetailedText("Forked by xxx, repo: https://github.com/ /drcom-jlu-qt\n\n"
+                      "Original repo: https://github.com/code4lala/drcom-jlu-qt");
     b.exec();
 }
 
@@ -201,6 +202,13 @@ void MainWindow::QuitDrcom()
     }
     // 正在登录时候退出，假装没看到，不理
     // qApp->quit() 调用放到了注销响应那块
+}
+
+void MainWindow::RestartDrcomByUserWithConfirm()
+{
+    if (QMessageBox::question(this, "", tr("Are you sure you want to restart?")) == QMessageBox::StandardButton::Yes) {
+        RestartDrcomByUser();
+    }
 }
 
 void MainWindow::RestartDrcomByUser()
@@ -345,11 +353,11 @@ void MainWindow::LoginButtonClicked()
     auto password = Decrypt(s.value(ID_PASSWORD, "").toByteArray());
 
     if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
-        QMessageBox::warning(this, QApplication::applicationDisplayName(), tr("Fields cannot be empty!"));
+        QMessageBox::warning(this, "", tr("Fields cannot be empty!"));
         return;
     }
     if (macAddr.length() != 17) {
-        QMessageBox::warning(this, QApplication::applicationDisplayName(), tr("Illegal MAC address!"));
+        QMessageBox::warning(this, "", tr("Illegal MAC address!"));
         return;
     }
 
@@ -605,8 +613,7 @@ void MainWindow::BrowserButtonClicked()
 
 void MainWindow::UserLogOut()
 {
-    if (QMessageBox::question(this, tr("Logout"), tr("Are you sure you want to log out?")) !=
-        QMessageBox::StandardButton::Yes) {
+    if (QMessageBox::question(this, "", tr("Are you sure you want to log out?")) != QMessageBox::StandardButton::Yes) {
         return;
     }
 

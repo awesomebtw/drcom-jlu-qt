@@ -69,6 +69,8 @@ public slots:
 
     void QuitDrcom();
 
+    void RestartDrcomByUserWithConfirm();
+
     void RestartDrcomByUser();
 
 private:
