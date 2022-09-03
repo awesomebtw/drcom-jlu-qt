@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     QTranslator translator;
-    (void) translator.load("DrComJluQt_zh_CN.qm");
+    (void) translator.load(":/ts/DrComJluQt_zh_CN.qm");
     QApplication::installTranslator(&translator);
 
     QSystemSemaphore semaphore("DrcomQtSem", 1);  // create semaphore
