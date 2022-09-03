@@ -139,7 +139,6 @@ void MainWindow::UpdateTimer()
 void MainWindow::AboutDrcom()
 {
     QMessageBox b;
-    b.setWindowIcon(onlineIcon);
     b.setIcon(QMessageBox::Information);
     b.setWindowTitle(tr("About"));
     b.setInformativeText("(c) All rights reserved.");
@@ -386,12 +385,12 @@ void MainWindow::SetIcon(bool online)
         // 设置彩色图标
         trayIcon->setToolTip(QApplication::applicationDisplayName().append(" - ").append(tr("online")));
         trayIcon->setIcon(onlineIcon);
-        setWindowIcon(onlineIcon);
+        qApp->setWindowIcon(onlineIcon);
     } else {
         // 设置灰色图标
         trayIcon->setToolTip(QApplication::applicationDisplayName().append(" - ").append(tr("offline")));
         trayIcon->setIcon(offlineIcon);
-        setWindowIcon(offlineIcon);
+        qApp->setWindowIcon(offlineIcon);
     }
 }
 
