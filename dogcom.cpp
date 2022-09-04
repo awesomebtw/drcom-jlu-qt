@@ -31,19 +31,23 @@ void DogCom::Stop()
     sleeper->Interrupt();
 }
 
-void DogCom::FillConfig(QString a, QString p, QString m)
+void DogCom::FillConfig(QString a, QString p, const QString &m)
 {
     account = std::move(a);
     password = std::move(p);
-    macAddr = std::move(m);
+
+    // 将QString转换为unsigned char
+    std::sscanf(m.toLocal8Bit().data(), "%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX",
+                &macBinary[0], &macBinary[1], &macBinary[2],
+                &macBinary[3], &macBinary[4], &macBinary[5]);
 }
 
-void DogCom::print_packet(const char msg[], const unsigned char *packet, size_t length) const
+void DogCom::PrintPacket(const char msg[], const unsigned char *packet, size_t length) const
 {
     if (!log)
         return;
     QString x;
-    for (int i = 0; i < length; i++) {
+    for (size_t i = 0; i < length; i++) {
         x.append(QString::asprintf("%02x ", packet[i]));
     }
     qDebug("%s %s", msg, x.toStdString().c_str());
@@ -62,8 +66,7 @@ void DogCom::run()
         skt.init();
     }
     catch (DogcomSocketException &e) {
-        qCritical() << "dogcom socket init error"
-                    << " msg: " << e.what();
+        qCritical() << "dogcom socket init error" << " msg: " << e.what();
         switch (e.errCode) {
             case DogcomError::WSA_START_UP:
                 emit ReportOffline(LoginResult::WSA_STARTUP);
@@ -86,7 +89,7 @@ void DogCom::run()
     qInfo() << "Bind Success!";
     unsigned char seed[4];
     unsigned char auth_information[16];
-    if (!dhcp_challenge(skt, seed)) {
+    if (!DhcpChallenge(skt, seed)) {
         qCritical() << "dhcp challenge failed";
         emit ReportOffline(LoginResult::CHALLENGE_FAILED);
         return;
@@ -95,28 +98,28 @@ void DogCom::run()
         qDebug() << "trying to login...";
         sleeper->Sleep(200); // 0.2 sec
         qDebug() << "Wait for 0.2 second done.";
-        LoginResult offLineReason;
-        if ((offLineReason = dhcp_login(skt, seed, auth_information)) == LoginResult::NOT_AN_ERROR) {
+        LoginResult offLineReason = DhcpLogin(skt, seed, auth_information);
+        if (offLineReason == LoginResult::NOT_AN_ERROR) {
             // 登录成功
             emit ReportOnline();
             int keepalive_counter = 0;
             int first = 1;
             while (true) {
-                if (!keepalive_1(skt, auth_information)) {
+                if (!Keepalive1(skt, auth_information)) {
                     sleeper->Sleep(200); // 0.2 second
-                    if (keepalive_2(skt, keepalive_counter, first)) {
+                    if (Keepalive2(skt, keepalive_counter, first)) {
                         continue;
                     }
                     qDebug() << "Keepalive in loop.";
                     if (!sleeper->Sleep(20000)) {
-                        // 先注销再退出，这样DogcomSocket的析构函数一定会执行
+                        // 先注销再退出，这样 DogcomSocket 的析构函数一定会执行
                         // 窗口函数部分处理是用户注销还是用户退出
                         qDebug() << "Interruptted by user";
                         emit ReportOffline(LoginResult::USER_LOGOUT);
                         return;
                     }
                 } else {
-                    qDebug() << "ReportOffline OfflineReason::TIMEOUT caused by keepalive_1";
+                    qDebug() << "ReportOffline OfflineReason::TIMEOUT caused by Keepalive1";
                     emit ReportOffline(LoginResult::TIMEOUT);
                     return;
                 }
@@ -129,7 +132,7 @@ void DogCom::run()
     }
 }
 
-bool DogCom::dhcp_challenge(DogcomSocket &socket, unsigned char seed[])
+bool DogCom::DhcpChallenge(DogcomSocket &socket, unsigned char seed[])
 {
     constexpr size_t CHALLENGE_PACKET_LEN = 20, RECV_PACKET_LEN = 1024;
 
@@ -146,7 +149,7 @@ bool DogCom::dhcp_challenge(DogcomSocket &socket, unsigned char seed[])
         qCritical() << "Failed to send challenge";
         return false;
     }
-    print_packet("[Challenge sent]", challenge_packet, sizeof(challenge_packet));
+    PrintPacket("[Challenge sent]", challenge_packet, sizeof(challenge_packet));
 
     qDebug() << "reading from dest...";
     if (socket.read(reinterpret_cast<char *>(recv_packet)) <= 0) {
@@ -154,7 +157,7 @@ bool DogCom::dhcp_challenge(DogcomSocket &socket, unsigned char seed[])
         return false;
     }
     qDebug() << "read done";
-    print_packet("[Challenge recv]", recv_packet, 76);
+    PrintPacket("[Challenge recv]", recv_packet, 76);
 
     if (recv_packet[0] != 0x02) {
         return false;
@@ -181,20 +184,18 @@ enum LoginErrorCode {
     LOGIN_MUST_USE_DHCP = 0x17
 };
 
-LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsigned char auth_information[])
+LoginResult DogCom::DhcpLogin(DogcomSocket &socket, unsigned char seed[], unsigned char auth_information[])
 {
-    size_t login_packet_size;
     size_t length_padding = 0;
     size_t JLU_padding = 0;
 
     if (password.length() > 8) {
-//        length_padding = password.length() - 8 + (length_padding % 2);
         if (password.length() != 16) {
             JLU_padding = password.length() / 4;
         }
         length_padding = 28 + password.length() - 8 + JLU_padding;
     }
-    login_packet_size = 338 + length_padding;
+    size_t login_packet_size = 338 + length_padding;
 
     // checksum1[8]改为checksum1[16]
     VLA(uint8_t, login_packet, login_packet_size);
@@ -226,15 +227,10 @@ LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsig
     }
 
     // unpack
-    // 将QString转换为unsigned char
-    unsigned char mac_binary[6];
 
-    std::sscanf(macAddr.toLocal8Bit().data(), "%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX",
-                &mac_binary[0], &mac_binary[1], &mac_binary[2],
-                &mac_binary[3], &mac_binary[4], &mac_binary[5]);
     // 将QString转换为unsigned char结束
     uint64_t mac = 0;
-    for (unsigned char i: mac_binary) {
+    for (unsigned char i: macBinary) {
         mac = i + mac * 256;
     }
     sum ^= mac;
@@ -267,27 +263,29 @@ LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsig
     login_packet[105] = 0x01;
     memcpy(login_packet + 110, "LIYUANYUAN", 10);
 
-    unsigned char PRIMARY_DNS[4]{10, 10, 10, 10};
-    memcpy(login_packet + 142, PRIMARY_DNS, 4);
-    unsigned char dhcp_server[4] = {0};
-    memcpy(login_packet + 146, dhcp_server, 4);
-    unsigned char OSVersionInfoSize[4] = {0x94};
-    unsigned char OSMajor[4] = {0x06};
-    unsigned char OSMinor[4] = {0x02};
-    unsigned char OSBuild[4] = {0xf0, 0x23};
-    unsigned char PlatformID[4] = {0x02};
-    OSVersionInfoSize[0] = 0x94;
-    unsigned char ServicePack[40] = {0x33, 0x64, 0x63, 0x37, 0x39, 0x66, 0x35, 0x32, 0x31, 0x32, 0x65, 0x38, 0x31, 0x37,
-                                     0x30, 0x61, 0x63, 0x66, 0x61, 0x39, 0x65, 0x63, 0x39, 0x35, 0x66, 0x31, 0x64, 0x37,
-                                     0x34, 0x39, 0x31, 0x36, 0x35, 0x34, 0x32, 0x62, 0x65, 0x37, 0x62, 0x31};
+    unsigned char primaryDns[4]{10, 10, 10, 10};
+    memcpy(login_packet + 142, primaryDns, 4);
+    unsigned char dhcpServer[4] = {0};
+    memcpy(login_packet + 146, dhcpServer, 4);
+    unsigned char osVersionInfoSize[4] = {0x94};
+    unsigned char osMajor[4] = {0x06};
+    unsigned char osMinor[4] = {0x02};
+    unsigned char osBuild[4] = {0xf0, 0x23};
+    unsigned char platformId[4] = {0x02};
+    osVersionInfoSize[0] = 0x94;
+    unsigned char servicePack[40] = {
+            0x33, 0x64, 0x63, 0x37, 0x39, 0x66, 0x35, 0x32, 0x31, 0x32, 0x65, 0x38, 0x31, 0x37,
+            0x30, 0x61, 0x63, 0x66, 0x61, 0x39, 0x65, 0x63, 0x39, 0x35, 0x66, 0x31, 0x64, 0x37,
+            0x34, 0x39, 0x31, 0x36, 0x35, 0x34, 0x32, 0x62, 0x65, 0x37, 0x62, 0x31
+    };
     unsigned char hostname[9] = {0x44, 0x72, 0x43, 0x4f, 0x4d, 0x00, 0xcf, 0x07, 0x68};
     memcpy(login_packet + 182, hostname, 9);
-    memcpy(login_packet + 246, ServicePack, 40);
-    memcpy(login_packet + 162, OSVersionInfoSize, 4);
-    memcpy(login_packet + 166, OSMajor, 4);
-    memcpy(login_packet + 170, OSMinor, 4);
-    memcpy(login_packet + 174, OSBuild, 4);
-    memcpy(login_packet + 178, PlatformID, 4);
+    memcpy(login_packet + 246, servicePack, 40);
+    memcpy(login_packet + 162, osVersionInfoSize, 4);
+    memcpy(login_packet + 166, osMajor, 4);
+    memcpy(login_packet + 170, osMinor, 4);
+    memcpy(login_packet + 174, osBuild, 4);
+    memcpy(login_packet + 178, platformId, 4);
     login_packet[310] = 0x68;
     login_packet[311] = 0x00;
     size_t counter = 312;
@@ -313,7 +311,7 @@ LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsig
     unsigned char checksum2_tmp[6] = {0x01, 0x26, 0x07, 0x11};
     memcpy(checksum2_str, login_packet, counter + 2);
     memcpy(checksum2_str + counter + 2, checksum2_tmp, 6);
-    memcpy(checksum2_str + counter + 8, mac_binary, 6);
+    memcpy(checksum2_str + counter + 8, macBinary, 6);
     sum = 1234;
 
     for (int i = 0; i < counter + 14; i += 4) {
@@ -328,7 +326,7 @@ LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsig
         checksum2[j] = (unsigned char) (sum >> (j * 8) & 0xff);
     }
     memcpy(login_packet + counter + 2, checksum2, 4);
-    memcpy(login_packet + counter + 8, mac_binary, 6);
+    memcpy(login_packet + counter + 8, macBinary, 6);
     login_packet[counter + ror_padding + 14] = 0xe9;
     login_packet[counter + ror_padding + 15] = 0x13;
     login_packet[counter + ror_padding + 14] = 0x60;
@@ -336,14 +334,14 @@ LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsig
 
     qDebug() << "login_packet_size:" << login_packet_size;
     socket.write(reinterpret_cast<const char *>(login_packet), static_cast<int>(login_packet_size));
-//    print_packet("[Login sent]", login_packet, login_packet_size);
+//    PrintPacket("[Login sent]", login_packet, login_packet_size);
 
     if (socket.read(reinterpret_cast<char *>(recv_packet)) <= 0) {
         qCritical() << "Failed to recv data";
         return LoginResult::TIMEOUT;
     }
 
-//    print_packet("[Login recv]", recv_packet, 100);
+//    PrintPacket("[Login recv]", recv_packet, 100);
     if (recv_packet[0] != 0x04) {
         qDebug() << "<<< Login failed >>>";
         if (recv_packet[0] == 0x05) {
@@ -385,7 +383,7 @@ LoginResult DogCom::dhcp_login(DogcomSocket &socket, unsigned char seed[], unsig
     return LoginResult::NOT_AN_ERROR;
 }
 
-int DogCom::keepalive_1(DogcomSocket &socket, unsigned char auth_information[])
+int DogCom::Keepalive1(DogcomSocket &socket, unsigned char auth_information[])
 {
     unsigned char keepalive_1_packet1[8] = {0x07, 0x01, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00};
     unsigned char recv_packet1[1024]{}, keepalive_1_packet2[38]{}, recv_packet2[1024]{};
@@ -395,14 +393,12 @@ int DogCom::keepalive_1(DogcomSocket &socket, unsigned char auth_information[])
         return 1;
     }
     qDebug() << "[Keepalive1 sent]";
-    //    print_packet("[Keepalive1 sent]",keepalive_1_packet1,42);
     while (true) {
         if (socket.read((char *) recv_packet1) <= 0) {
             qCritical() << "Failed to recv data";
             return 1;
         } else {
             qDebug() << "[Keepalive1 challenge_recv]";
-            //            print_packet("[Keepalive1 challenge_recv]",recv_packet1,100);
             if (recv_packet1[0] == 0x07) {
                 break;
             } else if (recv_packet1[0] == 0x4d) {
@@ -419,7 +415,7 @@ int DogCom::keepalive_1(DogcomSocket &socket, unsigned char auth_information[])
     unsigned char crc[8] = {0};
     memcpy(keepalive1_seed, &recv_packet1[8], 4);
     int encrypt_type = keepalive1_seed[0] & 3;
-    gen_crc(keepalive1_seed, encrypt_type, crc);
+    GenCrc(keepalive1_seed, encrypt_type, crc);
     keepalive_1_packet2[0] = 0xff;
     memcpy(keepalive_1_packet2 + 8, keepalive1_seed, 4);
     memcpy(keepalive_1_packet2 + 12, crc, 8);
@@ -447,13 +443,13 @@ int DogCom::keepalive_1(DogcomSocket &socket, unsigned char auth_information[])
     return 0;
 }
 
-int DogCom::keepalive_2(DogcomSocket &socket, int &keepalive_counter, int &first)
+int DogCom::Keepalive2(DogcomSocket &socket, int &keepalive_counter, int &first)
 {
     unsigned char keepalive_2_packet[40]{}, recv_packet[1024]{}, tail[4]{};
 
     if (first) {
         // send the file packet
-        keepalive_2_packet_builder(keepalive_2_packet, keepalive_counter % 0xFF, first, 1);
+        Keepalive2PacketBuilder(keepalive_2_packet, keepalive_counter % 0xFF, first, 1);
         keepalive_counter++;
 
         if (socket.write((const char *) keepalive_2_packet, sizeof(keepalive_2_packet)) <= 0) {
@@ -485,7 +481,7 @@ int DogCom::keepalive_2(DogcomSocket &socket, int &keepalive_counter, int &first
 
     // send the first packet
     first = 0;
-    keepalive_2_packet_builder(keepalive_2_packet, keepalive_counter % 0xFF, first, 1);
+    Keepalive2PacketBuilder(keepalive_2_packet, keepalive_counter % 0xFF, first, 1);
     keepalive_counter++;
     socket.write((const char *) keepalive_2_packet, sizeof(keepalive_2_packet));
 
@@ -509,7 +505,7 @@ int DogCom::keepalive_2(DogcomSocket &socket, int &keepalive_counter, int &first
     memcpy(tail, &recv_packet[16], 4);
 
     memset(keepalive_2_packet, 0, sizeof(keepalive_2_packet));
-    keepalive_2_packet_builder(keepalive_2_packet, keepalive_counter % 0xFF, first, 3);
+    Keepalive2PacketBuilder(keepalive_2_packet, keepalive_counter % 0xFF, first, 3);
     memcpy(keepalive_2_packet + 16, tail, 4);
     keepalive_counter++;
     socket.write((const char *) keepalive_2_packet, sizeof(keepalive_2_packet));
@@ -537,7 +533,7 @@ int DogCom::keepalive_2(DogcomSocket &socket, int &keepalive_counter, int &first
     return 0;
 }
 
-void DogCom::gen_crc(unsigned char seed[], int encrypt_type, unsigned char crc[])
+void DogCom::GenCrc(unsigned char seed[], int encrypt_type, unsigned char crc[])
 {
     if (encrypt_type == 0) {
         char DRCOM_DIAL_EXT_PROTO_CRC_INIT[4] = {(char) 0xc7, (char) 0x2f, (char) 0x31, (char) 0x01};
@@ -584,7 +580,7 @@ void DogCom::gen_crc(unsigned char seed[], int encrypt_type, unsigned char crc[]
 }
 
 void
-DogCom::keepalive_2_packet_builder(unsigned char keepalive_2_packet[], int keepalive_counter, int filepacket, int type)
+DogCom::Keepalive2PacketBuilder(unsigned char keepalive_2_packet[], int keepalive_counter, int filepacket, int type)
 {
     keepalive_2_packet[0] = 0x07;
     keepalive_2_packet[1] = keepalive_counter;

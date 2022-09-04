@@ -15,7 +15,7 @@ public:
 
     void Stop();
 
-    void FillConfig(QString a, QString p, QString m);
+    void FillConfig(QString a, QString p, const QString &m);
 
 protected:
     void run() override;
@@ -24,23 +24,22 @@ private:
     InterruptibleSleeper *sleeper;
     QString account;
     QString password;
-    QString macAddr;
+    unsigned char macBinary[6]{};
     bool log;
 
-    bool dhcp_challenge(DogcomSocket &socket, unsigned char seed[]);
+    bool DhcpChallenge(DogcomSocket &socket, unsigned char seed[]);
 
-    void print_packet(const char msg[], const unsigned char *packet, size_t length) const;
+    void PrintPacket(const char msg[], const unsigned char *packet, size_t length) const;
 
-    LoginResult dhcp_login(DogcomSocket &socket, unsigned char seed[], unsigned char auth_information[]);
+    LoginResult DhcpLogin(DogcomSocket &socket, unsigned char seed[], unsigned char auth_information[]);
 
-    int keepalive_1(DogcomSocket &socket, unsigned char auth_information[]);
+    int Keepalive1(DogcomSocket &socket, unsigned char auth_information[]);
 
-    int keepalive_2(DogcomSocket &socket, int &keepalive_counter, int &first);
+    int Keepalive2(DogcomSocket &socket, int &keepalive_counter, int &first);
 
-    void gen_crc(unsigned char seed[], int encrypt_type, unsigned char crc[]);
+    void GenCrc(unsigned char seed[], int encrypt_type, unsigned char crc[]);
 
-    void
-    keepalive_2_packet_builder(unsigned char keepalive_2_packet[], int keepalive_counter, int filepacket, int type);
+    void Keepalive2PacketBuilder(unsigned char keepalive_2_packet[], int keepalive_counter, int filepacket, int type);
 
 signals:
 

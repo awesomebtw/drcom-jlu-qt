@@ -1,21 +1,19 @@
 #ifdef WIN32
 
-#include "constants.h"
 #include <winsock2.h>
 
 #else
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
+
 #endif
 
-#include <string>
 #include <QDebug>
 #include "DogcomSocket.h"
-
-using std::string;
 
 void DogcomSocket::init()
 {
@@ -104,7 +102,7 @@ int DogcomSocket::read(char *buf)
 #ifdef WIN32
     int addrlen = sizeof(dest_addr);
 #else
-    socklen_t addrlen=sizeof(dest_addr);
+    socklen_t addrlen = sizeof(dest_addr);
 #endif
     return recvfrom(sockfd, buf, 1024, 0, (struct sockaddr *) &dest_addr, &addrlen);
 }
@@ -125,32 +123,22 @@ DogcomSocket::~DogcomSocket()
 
 const char *DogcomSocketException::what() const noexcept
 {
-    static std::array<char, 1024> buf;
+    static std::array<char, 64> buf;
     switch (errCode) {
         case DogcomError::WSA_START_UP:
-            snprintf(buf.data(), buf.size(),
-                     "WSAStartup failed. Error code: %d",
-                     realErrCode);
+            snprintf(buf.data(), buf.size(), "WSAStartup failed. Error code: %d", realErrCode);
             break;
         case DogcomError::SOCKET:
-            snprintf(buf.data(), buf.size(),
-                     "socket failed. Error code: %d",
-                     realErrCode);
+            snprintf(buf.data(), buf.size(), "socket failed. Error code: %d", realErrCode);
             break;
         case DogcomError::BIND:
-            snprintf(buf.data(), buf.size(),
-                     "bind failed. Error code: %d",
-                     realErrCode);
+            snprintf(buf.data(), buf.size(), "bind failed. Error code: %d", realErrCode);
             break;
         case DogcomError::SET_SOCK_OPT_TIMEOUT:
-            snprintf(buf.data(), buf.size(),
-                     "timeout failed. Error code: %d",
-                     realErrCode);
+            snprintf(buf.data(), buf.size(), "timeout failed. Error code: %d", realErrCode);
             break;
         case DogcomError::SET_SOCK_OPT_REUSE:
-            snprintf(buf.data(), buf.size(),
-                     "port reuse failed. Error code: %d",
-                     realErrCode);
+            snprintf(buf.data(), buf.size(), "port reuse failed. Error code: %d", realErrCode);
             break;
     }
     return buf.data();
