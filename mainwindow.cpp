@@ -389,6 +389,8 @@ void MainWindow::HandleOfflineTimeout(const QString &string)
     if (QMessageBox::question(this, tr("Login failed"), boxText) == QMessageBox::StandardButton::Yes) {
         qDebug() << "Restart DrCOM confirmed in case OfflineReason::TIMEOUT";
         RestartDrcomByUser();
+    } else {
+        dogcomController.LogOut(); // if not restart, must log out to release socket
     }
 }
 
@@ -475,6 +477,7 @@ void MainWindow::HandleOffline(LoginResult reason)
     SetIcon(false);
     // 禁用注销按钮
     logOutAction->setEnabled(false);
+    ui->centralStackedWidget->setCurrentIndex(NOT_LOGGED_IN_PAGE_INDEX);
     // 显示出窗口
     ShowLoginWindow();
 }
