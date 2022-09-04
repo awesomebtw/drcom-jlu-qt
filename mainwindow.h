@@ -78,7 +78,6 @@ public slots:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     QApplication *app = nullptr;
-    QSettings s;
 
     // 用于在未登录时关闭窗口就退出
     State currState;

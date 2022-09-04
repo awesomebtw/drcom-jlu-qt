@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "mainwindow.h"
+#include "settings.h"
 
 //日志生成
 void LogMsgOutput(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -97,10 +98,9 @@ int main(int argc, char *argv[])
 
     MainWindow w(&a);
 
-    QSettings s(SETTINGS_FILE_NAME);
-    bool hideWindow = s.value(ID_HIDE_WINDOW, false).toBool();
+    bool hideWindow = DrcomUserSettings::Instance().HideWindow();
     // 如果是软件自行重启的就不显示窗口
-    int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
+    uint restartTimes = DrcomUserSettings::Instance().SelfRestartCount();
     qDebug() << "restartTimes = " << restartTimes;
     if (hideWindow) {
         qDebug() << "not show window caused by user settings";

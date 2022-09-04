@@ -1,10 +1,9 @@
 ﻿#include <QtNetwork/QNetworkInterface>
 #include <QApplication>
-#include <QElapsedTimer>
+#include <QTimer>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QValidator>
-#include <QSettings>
 #include <QWindow>
 #include <QDesktopServices>
 #include <QUrl>
@@ -15,6 +14,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "constants.h"
+#include "settings.h"
 #include "utils.h"
 
 constexpr const int RETRY_TIMES = 3;
@@ -28,7 +28,6 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
         QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint),
         ui(new Ui::MainWindow),
         app(parentApp),
-        s(SETTINGS_FILE_NAME, QSettings::IniFormat),
         macValidator(QRegularExpression("^[0-9a-fA-F]{2}([:-][0-9a-fA-F]{2}){5}"), this),
         // 创建托盘菜单和图标
         trayIcon(new QSystemTrayIcon(this)),
@@ -49,7 +48,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     ui->setupUi(this);
 
     // 记住窗口大小功能
-    restoreGeometry(s.value(ID_MAIN_WINDOW_GEOMETRY).toByteArray());
+    restoreGeometry(DrcomUserSettings::Instance().MainWindowGeometry());
 
     // put mac addresses to combobox
     for (const QNetworkInterface &i: QNetworkInterface::allInterfaces()) {
@@ -110,15 +109,14 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
     logOutAction->setEnabled(false); // 尚未登录不可注销
 
     // 自动登录功能
-    int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
-    if (restartTimes > 0 || s.value(ID_AUTO_LOGIN, false).toBool()) { // 尝试自动重启中
+    if (DrcomUserSettings::Instance().SelfRestartCount() > 0 || DrcomUserSettings::Instance().AutoLogin()) {
         emit ui->loginButton->click();
     }
 }
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
-    s.setValue(ID_MAIN_WINDOW_GEOMETRY, saveGeometry());
+    DrcomUserSettings::Instance().SetMainWindowGeometry(saveGeometry());
     // 未登录时直接关闭窗口就退出
     if (currState == State::OFFLINE) {
         QuitDrcom();
@@ -165,7 +163,7 @@ void MainWindow::RestartDrcom()
 void MainWindow::QuitDrcom()
 {
     // 退出之前恢复重试计数
-    s.setValue(ID_RESTART_TIMES, 0);
+    DrcomUserSettings::Instance().ResetSelfRestartCount();
     qDebug() << "reset restartTimes QuitDrcom";
 
     switch (currState) {
@@ -192,7 +190,7 @@ void MainWindow::RestartDrcomByUserWithConfirm()
 void MainWindow::RestartDrcomByUser()
 {
     // 重启之前恢复重试计数
-    s.setValue(ID_RESTART_TIMES, 0);
+    DrcomUserSettings::Instance().ResetSelfRestartCount();
     qDebug() << "reset restartTimes";
     RestartDrcom();
 }
@@ -206,13 +204,13 @@ void MainWindow::IconActivated(QSystemTrayIcon::ActivationReason reason)
 
 void MainWindow::LoadSettings()
 {
-    auto account = s.value(ID_ACCOUNT, "").toString();
-    auto password = Utils::Decrypt(s.value(ID_PASSWORD, "").toByteArray());
-    auto macAddr = s.value(ID_MAC, "").toString();
-    auto remember = s.value(ID_REMEMBER, false).toBool();
-    auto hideWindow = s.value(ID_HIDE_WINDOW, false).toBool();
-    auto notShowWelcome = s.value(ID_NOT_SHOW_WELCOME, false).toBool();
-    auto autoLogin = s.value(ID_AUTO_LOGIN, false).toBool();
+    auto account = DrcomUserSettings::Instance().Account();
+    auto password = Utils::Decrypt(DrcomUserSettings::Instance().RawPassword());
+    auto macAddr = DrcomUserSettings::Instance().Mac();
+    auto remember = DrcomUserSettings::Instance().RememberCredential();
+    auto hideWindow = DrcomUserSettings::Instance().HideWindow();
+    auto notShowWelcome = DrcomUserSettings::Instance().DisableWelcomePage();
+    auto autoLogin = DrcomUserSettings::Instance().AutoLogin();
 
     ui->lineEditAccount->setText(account);
     ui->lineEditPass->setText(password);
@@ -263,9 +261,9 @@ void MainWindow::LoginButtonClicked()
 {
     WriteInputs();
 
-    auto macAddr = s.value(ID_MAC, "").toString();
-    auto account = s.value(ID_ACCOUNT, "").toString();
-    auto password = Utils::Decrypt(s.value(ID_PASSWORD, "").toByteArray());
+    auto macAddr = DrcomUserSettings::Instance().Mac();
+    auto account = DrcomUserSettings::Instance().Account();
+    auto password = Utils::Decrypt(DrcomUserSettings::Instance().RawPassword());
 
     if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
         QMessageBox::warning(this, "", tr("Fields cannot be empty!"));
@@ -312,18 +310,19 @@ void MainWindow::SetIcon(bool online)
 
 void MainWindow::WriteInputs()
 {
-    s.setValue(ID_ACCOUNT, ui->lineEditAccount->text());
-    s.setValue(ID_PASSWORD,
-               Utils::Encrypt(ui->lineEditPass->text().toLatin1())); // since all characters in a password are ascii
+    DrcomUserSettings &s = DrcomUserSettings::Instance();
+    s.SetAccount(ui->lineEditAccount->text());
+    s.SetRawPassword(
+            Utils::Encrypt(ui->lineEditPass->text().toLatin1())); // since all characters in a password are ascii
     if (ui->comboBoxMAC->currentData().isNull()) {
-        s.setValue(ID_MAC, ui->comboBoxMAC->currentText().toUpper());
+        s.SetMac(ui->comboBoxMAC->currentText().toUpper());
     } else {
-        s.setValue(ID_MAC, ui->comboBoxMAC->currentData().toString().toUpper());
+        s.SetMac(ui->comboBoxMAC->currentData().toString().toUpper());
     }
-    s.setValue(ID_REMEMBER, Utils::CheckStateToBoolean(ui->checkBoxRemember->checkState()));
-    s.setValue(ID_AUTO_LOGIN, Utils::CheckStateToBoolean(ui->checkBoxAutoLogin->checkState()));
-    s.setValue(ID_NOT_SHOW_WELCOME, Utils::CheckStateToBoolean(ui->checkBoxNotShowWelcome->checkState()));
-    s.setValue(ID_HIDE_WINDOW, Utils::CheckStateToBoolean(ui->checkBoxHideLoginWindow->checkState()));
+    s.SetRememberCredential(Utils::CheckStateToBoolean(ui->checkBoxRemember->checkState()));
+    s.SetAutoLogin(Utils::CheckStateToBoolean(ui->checkBoxAutoLogin->checkState()));
+    s.SetDisableWelcomePage(Utils::CheckStateToBoolean(ui->checkBoxNotShowWelcome->checkState()));
+    s.SetHideWindow(Utils::CheckStateToBoolean(ui->checkBoxHideLoginWindow->checkState()));
 }
 
 void MainWindow::HandleOfflineUserLogout(const QString &string) const
@@ -363,12 +362,12 @@ void MainWindow::HandleOfflineTimeout(const QString &string)
 {
     // 先尝试自己重启若干次，自个重启还不行的话再提示用户
     // 自己重启的话需要用户提前勾选记住密码
-    if (s.value(ID_REMEMBER, false).toBool()) {
-        int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
+    if (DrcomUserSettings::Instance().RememberCredential()) {
+        uint restartTimes = DrcomUserSettings::Instance().SelfRestartCount();
         qDebug() << "case OfflineReason::TIMEOUT: restartTimes = " << restartTimes;
         if (restartTimes <= RETRY_TIMES) {
             qDebug() << "case OfflineReason::TIMEOUT: restartTimes++";
-            s.setValue(ID_RESTART_TIMES, restartTimes + 1);
+            DrcomUserSettings::Instance().IncreaseSelfRestartCount();
             //尝试自行重启
             qDebug() << "trying to restart and reconnect...";
             qDebug() << "restarting for the" << restartTimes << "time(s)";
@@ -420,6 +419,11 @@ void MainWindow::HandleOffline(LoginResult reason)
             break;
         case LoginResult::WRONG_PASS:
             QMessageBox::critical(this, loginFailedTitle, tr("Account and password does not match."));
+            // 清除已保存的密码
+            DrcomUserSettings::Instance().SetRawPassword(QByteArray());
+            DrcomUserSettings::Instance().SetRememberCredential(false);
+            DrcomUserSettings::Instance().SetAutoLogin(false);
+            SaveSettings();
             break;
         case LoginResult::NOT_ENOUGH:
             QMessageBox::critical(this, loginFailedTitle, tr(
@@ -465,13 +469,6 @@ void MainWindow::HandleOffline(LoginResult reason)
             break;
     }
 
-    if (reason == LoginResult::WRONG_PASS) {
-        // 清除已保存的密码
-        s.setValue(ID_PASSWORD, QByteArray());
-        s.setValue(ID_REMEMBER, false);
-        s.setValue(ID_AUTO_LOGIN, false);
-        SaveSettings();
-    }
     // 重新启用输入
     SetDisableInput(false);
     SetIcon(false);
@@ -488,18 +485,18 @@ void MainWindow::HandleLoggedIn()
     upTimer.start(10 * 1000); // update every 10 sec
     QTimer::singleShot(0, this, &MainWindow::UpdateTimer);
 
-    int restartTimes = s.value(ID_RESTART_TIMES, 0).toInt();
+    uint restartTimes = DrcomUserSettings::Instance().SelfRestartCount();
     qDebug() << "HandleLoggedIn: restartTimes = " << restartTimes;
 
     currState = State::ONLINE;
     // 显示欢迎页
-    if (restartTimes == 0 && !s.value(ID_NOT_SHOW_WELCOME, false).toBool()) {
+    if (restartTimes == 0 && !DrcomUserSettings::Instance().DisableWelcomePage()) {
         qDebug() << "open welcome page";
         QDesktopServices::openUrl(QUrl("http://login.jlu.edu.cn/notice.php"));
     }
-    // 登录成功，保存密码
-    if (!s.value(ID_REMEMBER, false).toBool()) {
-        s.setValue(ID_PASSWORD, QByteArray());
+
+    if (!DrcomUserSettings::Instance().RememberCredential()) {
+        DrcomUserSettings::Instance().SetRawPassword(QByteArray());
     }
     SaveSettings();
     SetIcon(true);
@@ -511,7 +508,7 @@ void MainWindow::HandleLoggedIn()
     // set username
     ui->loggedInUsernameLabel->setText(ui->lineEditAccount->text());
 
-    s.setValue(ID_RESTART_TIMES, 0);
+    DrcomUserSettings::Instance().ResetSelfRestartCount();
     qDebug() << "HandleLoggedIn: reset restartTimes";
 }
 
@@ -572,10 +569,10 @@ void MainWindow::AboutDrcom()
 
 void MainWindow::on_checkBoxNotShowWelcome_toggled(bool checked)
 {
-    s.setValue(ID_NOT_SHOW_WELCOME, checked);
+    DrcomUserSettings::Instance().SetDisableWelcomePage(checked);
 }
 
 void MainWindow::on_checkBoxHideLoginWindow_toggled(bool checked)
 {
-    s.setValue(ID_HIDE_WINDOW, checked);
+    DrcomUserSettings::Instance().SetHideWindow(checked);
 }
