@@ -36,8 +36,8 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
         logOutAction(new QAction(tr("&Logout"), this)),
         restartAction(new QAction(tr("Re&start"), this)),
         quitAction(new QAction(tr("&Quit"), this)),
-        onlineIcon(":/images/online.png"),
-        offlineIcon(":/images/offline.png"),
+        onlineIcon(":/resources/online.png"),
+        offlineIcon(":/resources/offline.png"),
         currState(State::OFFLINE),
         upTimer(this)
 {
