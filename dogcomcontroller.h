@@ -1,5 +1,5 @@
-﻿#ifndef DOGCOMCONTROLLER_H
-#define DOGCOMCONTROLLER_H
+﻿#ifndef DRCOMJLUQT_DOGCOMCONTROLLER_H
+#define DRCOMJLUQT_DOGCOMCONTROLLER_H
 
 #include <QApplication>
 #include <QObject>
@@ -29,4 +29,4 @@ private:
 	std::unique_ptr<DogCom> dogcom;
 };
 
-#endif // DOGCOMCONTROLLER_H
+#endif //DRCOMJLUQT_DOGCOMCONTROLLER_H

@@ -1,5 +1,5 @@
-﻿#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+﻿#ifndef DRCOMJLUQT_MAINWINDOW_H
+#define DRCOMJLUQT_MAINWINDOW_H
 
 #include <QDialog>
 #include <QMenuBar>
@@ -114,4 +114,4 @@ private:
     void SetDisableInput(bool yes);
 };
 
-#endif // MAINWINDOW_H
+#endif // DRCOMJLUQT_MAINWINDOW_H

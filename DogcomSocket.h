@@ -1,5 +1,5 @@
-#ifndef MYUDPSOCKET_DOGCOMSOCKET_H
-#define MYUDPSOCKET_DOGCOMSOCKET_H
+#ifndef DRCOMJLUQT_DOGCOMSOCKET_H
+#define DRCOMJLUQT_DOGCOMSOCKET_H
 
 #include <exception>
 
@@ -54,4 +54,4 @@ public:
     virtual ~DogcomSocket();
 };
 
-#endif //MYUDPSOCKET_DOGCOMSOCKET_H
+#endif //DRCOMJLUQT_DOGCOMSOCKET_H

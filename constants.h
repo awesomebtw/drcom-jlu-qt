@@ -1,5 +1,5 @@
-﻿#ifndef CONSTANTS_H
-#define CONSTANTS_H
+﻿#ifndef DRCOMJLUQT_CONSTANTS_H
+#define DRCOMJLUQT_CONSTANTS_H
 
 enum class LoginResult {
     NOT_AN_ERROR,
@@ -29,4 +29,4 @@ enum class LoginResult {
     SET_SOCKET_REUSE,
 };
 
-#endif // CONSTANTS_H
+#endif //DRCOMJLUQT_CONSTANTS_H

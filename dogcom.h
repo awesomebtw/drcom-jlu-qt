@@ -1,5 +1,5 @@
-﻿#ifndef DOGCOM_H
-#define DOGCOM_H
+﻿#ifndef DRCOMJLUQT_DOGCOM_H
+#define DRCOMJLUQT_DOGCOM_H
 
 #include <QThread>
 #include <QUdpSocket>
@@ -50,4 +50,4 @@ signals:
     void ReportIpAddress(unsigned char x1, unsigned char x2, unsigned char x3, unsigned char x4);
 };
 
-#endif // DOGCOM_H
+#endif //DRCOMJLUQT_DOGCOM_H
