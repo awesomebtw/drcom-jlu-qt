@@ -13,9 +13,9 @@ namespace Utils
 
     bool CheckStateToBoolean(Qt::CheckState val);
 
-    QByteArray Encrypt(QByteArray arr);
+    QByteArray Encrypt(const QByteArray &arr, const QByteArray &salt);
 
-    QByteArray Decrypt(QByteArray arr);
+    QByteArray Decrypt(const QByteArray &arr, const QByteArray &salt);
 }
 
 #endif //DRCOMJLUQT_UTILS_H

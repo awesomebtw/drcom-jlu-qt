@@ -205,7 +205,10 @@ void MainWindow::IconActivated(QSystemTrayIcon::ActivationReason reason)
 void MainWindow::LoadSettings()
 {
     auto account = DrcomUserSettings::Instance().Account();
-    auto password = Utils::Decrypt(DrcomUserSettings::Instance().RawPassword());
+    auto password = Utils::Decrypt(
+            DrcomUserSettings::Instance().RawPassword(),
+            DrcomUserSettings::Instance().Account().toUtf8()
+    );
     auto macAddr = DrcomUserSettings::Instance().Mac();
     auto remember = DrcomUserSettings::Instance().RememberCredential();
     auto hideWindow = DrcomUserSettings::Instance().HideWindow();
@@ -263,7 +266,10 @@ void MainWindow::LoginButtonClicked()
 
     auto macAddr = DrcomUserSettings::Instance().Mac();
     auto account = DrcomUserSettings::Instance().Account();
-    auto password = Utils::Decrypt(DrcomUserSettings::Instance().RawPassword());
+    auto password = Utils::Decrypt(
+            DrcomUserSettings::Instance().RawPassword(),
+            DrcomUserSettings::Instance().Account().toUtf8()
+    );
 
     if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
         QMessageBox::warning(this, "", tr("Fields cannot be empty!"));
@@ -312,8 +318,10 @@ void MainWindow::WriteInputs()
 {
     DrcomUserSettings &s = DrcomUserSettings::Instance();
     s.SetAccount(ui->lineEditAccount->text());
-    s.SetRawPassword(
-            Utils::Encrypt(ui->lineEditPass->text().toLatin1())); // since all characters in a password are ascii
+    s.SetRawPassword(Utils::Encrypt(
+            ui->lineEditPass->text().toLatin1(), // since all characters in a password are ascii
+            ui->lineEditAccount->text().toUtf8()
+    ));
     if (ui->comboBoxMAC->currentData().isNull()) {
         s.SetMac(ui->comboBoxMAC->currentText().toUpper());
     } else {

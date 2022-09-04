@@ -22,45 +22,39 @@ bool Utils::CheckStateToBoolean(Qt::CheckState val)
 }
 
 // key for encryption algorithm
-constexpr static const char encKey[] = "Although never is often better than *right* now.\n"
-                                       "If the implementation is hard to explain, it's a bad idea.\n"
-                                       "If the implementation is easy to explain, it may be a good idea.\n"
-                                       "Namespaces are one honking great idea -- let's do more of those!";
+constexpr static const char encKey[] = "@h\\Q\x1AME\fN4kz}%\\K";
+constexpr static const char iv[] = "~pG&6\x19<V@3=e\x14,\t{";
 
-QByteArray Utils::Encrypt(QByteArray arr)
+QByteArray Utils::Encrypt(const QByteArray &arr, const QByteArray &salt)
 {
     using namespace CryptoPP;
 
-    SecByteBlock iv(SM4::DEFAULT_KEYLENGTH);
-    memset(iv, 0, iv.size());
     CBC_CTS_Mode<SM4>::Encryption e;
-    e.SetKeyWithIV(reinterpret_cast<const CryptoPP::byte *>(encKey), SM4::DEFAULT_KEYLENGTH, iv);
+    e.SetKeyWithIV(reinterpret_cast<const byte *>(encKey), SM4::DEFAULT_KEYLENGTH, reinterpret_cast<const byte *>(iv));
 
     StreamTransformationFilter encryptor(e, nullptr);
-    encryptor.Put(reinterpret_cast<const CryptoPP::byte *>(arr.data()), arr.length());
+    encryptor.Put(reinterpret_cast<const byte *>(salt.data()), salt.length());
+    encryptor.Put(reinterpret_cast<const byte *>(arr.data()), arr.length());
     for (auto i = arr.length(); i <= SM4::DEFAULT_KEYLENGTH; i++) {
-        encryptor.Put(CryptoPP::byte('\0')); // add padding if arr is too short
+        encryptor.Put(byte('\0')); // add padding if arr is too short
     }
     encryptor.MessageEnd();
 
     QByteArray res;
     if (encryptor.AnyRetrievable()) {
         res.resize(static_cast<qsizetype>(encryptor.MaxRetrievable()));
-        encryptor.Get(reinterpret_cast<CryptoPP::byte *>(&res[0]), res.length());
+        encryptor.Get(reinterpret_cast<byte *>(&res[0]), res.length());
     }
 
     return res;
 }
 
-QByteArray Utils::Decrypt(QByteArray arr)
+QByteArray Utils::Decrypt(const QByteArray &arr, const QByteArray &salt)
 {
     using namespace CryptoPP;
 
-    SecByteBlock iv(SM4::DEFAULT_KEYLENGTH);
-    memset(iv, 0, iv.size());
-
     CBC_CTS_Mode<SM4>::Decryption d;
-    d.SetKeyWithIV(reinterpret_cast<const byte *>(encKey), SM4::DEFAULT_KEYLENGTH, iv);
+    d.SetKeyWithIV(reinterpret_cast<const byte *>(encKey), SM4::DEFAULT_KEYLENGTH, reinterpret_cast<const byte *>(iv));
 
     StreamTransformationFilter decryptor(d, nullptr);
     decryptor.Put(reinterpret_cast<const byte *>(arr.data()), arr.length());
@@ -73,5 +67,5 @@ QByteArray Utils::Decrypt(QByteArray arr)
         res.resize(static_cast<qsizetype>(qstrlen(res.data()))); // remove padding NULs
     }
 
-    return res;
+    return res.right(res.length() - salt.length());
 }
