@@ -226,11 +226,6 @@ void MainWindow::LoadSettings()
     ui->checkBoxNotShowWelcome->setCheckState(Utils::BooleanToCheckState(notShowWelcome));
 }
 
-void MainWindow::SaveSettings()
-{
-//    s.sync();
-}
-
 void MainWindow::SetMAC(const QString &m)
 {
     for (int i = 0; i < ui->comboBoxMAC->count(); i++) {
@@ -431,7 +426,6 @@ void MainWindow::HandleOffline(LoginResult reason)
             DrcomUserSettings::Instance().SetRawPassword(QByteArray());
             DrcomUserSettings::Instance().SetRememberCredential(false);
             DrcomUserSettings::Instance().SetAutoLogin(false);
-            SaveSettings();
             break;
         case LoginResult::NOT_ENOUGH:
             QMessageBox::critical(this, loginFailedTitle, tr(
@@ -506,7 +500,6 @@ void MainWindow::HandleLoggedIn()
     if (!DrcomUserSettings::Instance().RememberCredential()) {
         DrcomUserSettings::Instance().SetRawPassword(QByteArray());
     }
-    SaveSettings();
     SetIcon(true);
     // 启用注销按钮
     logOutAction->setEnabled(true);

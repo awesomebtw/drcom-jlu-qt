@@ -109,8 +109,6 @@ private:
 
     void LoadSettings();
 
-    void SaveSettings();
-
     void SetMAC(const QString &m);
 
     void SetDisableInput(bool yes);
