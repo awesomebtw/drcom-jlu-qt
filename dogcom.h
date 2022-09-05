@@ -4,7 +4,7 @@
 #include <QThread>
 #include <QUdpSocket>
 #include <random>
-#include "constants.h"
+#include "loginresult.h"
 #include "interruptiblesleeper.h"
 #include "DogcomSocket.h"
 

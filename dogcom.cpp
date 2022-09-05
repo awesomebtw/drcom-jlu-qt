@@ -2,8 +2,9 @@
 
 #include <QDebug>
 #include <utility>
-#include "constants.h"
 #include <cstring>
+
+#include "loginresult.h"
 
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 
@@ -36,7 +37,7 @@ void DogCom::FillConfig(QString a, QString p, const QString &m)
     account = std::move(a);
     password = std::move(p);
 
-    // 将QString转换为unsigned char
+    // 将 QString 转换为 MAC
     std::sscanf(m.toLocal8Bit().data(), "%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX",
                 &macBinary[0], &macBinary[1], &macBinary[2],
                 &macBinary[3], &macBinary[4], &macBinary[5]);

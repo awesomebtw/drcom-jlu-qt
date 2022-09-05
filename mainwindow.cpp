@@ -13,7 +13,7 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "constants.h"
+#include "loginresult.h"
 #include "settings.h"
 #include "utils.h"
 
@@ -269,8 +269,7 @@ void MainWindow::LoginButtonClicked()
     if (account.isEmpty() || password.isEmpty() || macAddr.isEmpty()) {
         QMessageBox::warning(this, "", tr("Fields cannot be empty!"));
         return;
-    }
-    if (macAddr.length() != 17) {
+    } else if (macAddr.length() != 17) {
         QMessageBox::warning(this, "", tr("Illegal MAC address!"));
         return;
     }
@@ -328,7 +327,7 @@ void MainWindow::WriteInputs()
     s.SetHideWindow(Utils::CheckStateToBoolean(ui->checkBoxHideLoginWindow->checkState()));
 }
 
-void MainWindow::HandleOfflineUserLogout(const QString &string) const
+void MainWindow::HandleOfflineUserLogout() const
 {
     if (currState == State::ABOUT_TO_QUIT) {
         qApp->quit();
@@ -361,7 +360,7 @@ void MainWindow::HandleOfflineChallengeFailed(const QString &title)
     }
 }
 
-void MainWindow::HandleOfflineTimeout(const QString &string)
+void MainWindow::HandleOfflineTimeout()
 {
     // 先尝试自己重启若干次，自个重启还不行的话再提示用户
     // 自己重启的话需要用户提前勾选记住密码
@@ -388,7 +387,7 @@ void MainWindow::HandleOfflineTimeout(const QString &string)
                    tr("You may be unable to login until you restart DrCOM.") + " " +
                    tr("Restart DrCOM?");
 
-    if (QMessageBox::question(this, tr("Login failed"), boxText) == QMessageBox::StandardButton::Yes) {
+    if (QMessageBox::question(this, tr("You have been offline"), boxText) == QMessageBox::StandardButton::Yes) {
         qDebug() << "Restart DrCOM confirmed in case OfflineReason::TIMEOUT";
         RestartDrcomByUser();
     } else {
@@ -404,70 +403,23 @@ void MainWindow::HandleOffline(LoginResult reason)
     auto offlineTitle = tr("You have been offline");
     switch (reason) {
         case LoginResult::USER_LOGOUT:
-            HandleOfflineUserLogout(loginFailedTitle);
-            break;
-        case LoginResult::BIND_FAILED:
-            QMessageBox::critical(this, loginFailedTitle, tr(
-                    "Binding port failed. Please check if there are other clients occupying the port."));
+            HandleOfflineUserLogout();
             break;
         case LoginResult::CHALLENGE_FAILED:
             HandleOfflineChallengeFailed(loginFailedTitle);
             break;
-        case LoginResult::CHECK_MAC:
-            QMessageBox::critical(this, loginFailedTitle, tr(
-                    "Someone else is using this account, which cannot be used simultaneously."));
-            break;
-        case LoginResult::SERVER_BUSY:
-            QMessageBox::critical(this, loginFailedTitle, tr("The server is busy. Please try again later."));
-            break;
         case LoginResult::WRONG_PASS:
-            QMessageBox::critical(this, loginFailedTitle, tr("Account and password does not match."));
+            QMessageBox::critical(this, loginFailedTitle, LoginResultUtil::ToQString(LoginResult::WRONG_PASS));
             // 清除已保存的密码
             DrcomUserSettings::Instance().SetRawPassword(QByteArray());
             DrcomUserSettings::Instance().SetRememberCredential(false);
             DrcomUserSettings::Instance().SetAutoLogin(false);
             break;
-        case LoginResult::NOT_ENOUGH:
-            QMessageBox::critical(this, loginFailedTitle, tr(
-                    "The cumulative time or traffic for this account has exceeded the limit."));
-            break;
-        case LoginResult::FREEZE_UP:
-            QMessageBox::critical(this, loginFailedTitle, tr("This account is suspended."));
-            break;
-        case LoginResult::NOT_ON_THIS_IP:
-            QMessageBox::critical(
-                    this,
-                    loginFailedTitle,
-                    tr("IP address does not match.") + " " +
-                    tr("This account can only be logged in on computer(s) with specified IP and MAC addresses."));
-            break;
-        case LoginResult::NOT_ON_THIS_MAC:
-            QMessageBox::critical(
-                    this,
-                    loginFailedTitle,
-                    tr("MAC address does not match.") + " " +
-                    tr("This account can only be logged in on computer(s) with specified IP and MAC addresses."));
-            break;
-        case LoginResult::TOO_MUCH_IP:
-            QMessageBox::critical(this, loginFailedTitle, tr("This account has too many IP addresses."));
-            break;
-        case LoginResult::UPDATE_CLIENT:
-            QMessageBox::critical(this, loginFailedTitle, tr("The client version is too old and needs an update."));
-            break;
-        case LoginResult::NOT_ON_THIS_IP_MAC:
-            QMessageBox::critical(this, loginFailedTitle, tr(
-                    "This account can only be logged in on computer(s) with specified IP and MAC addresses."));
-            break;
-        case LoginResult::MUST_USE_DHCP:
-            QMessageBox::critical(this, loginFailedTitle, tr(
-                    "Your computer has a static IP address. Use DHCP instead and try again."));
-            break;
         case LoginResult::TIMEOUT:
-            HandleOfflineTimeout(loginFailedTitle);
+            HandleOfflineTimeout();
             break;
-        case LoginResult::UNKNOWN:
         default:
-            QMessageBox::critical(this, offlineTitle, tr("Unknow reason"));
+            QMessageBox::critical(this, loginFailedTitle, LoginResultUtil::ToQString(reason));
             break;
     }
 

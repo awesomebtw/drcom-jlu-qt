@@ -1,5 +1,7 @@
-﻿#ifndef DRCOMJLUQT_CONSTANTS_H
-#define DRCOMJLUQT_CONSTANTS_H
+﻿#ifndef DRCOMJLUQT_LOGINRESULT_H
+#define DRCOMJLUQT_LOGINRESULT_H
+
+#include <QString>
 
 enum class LoginResult {
     NOT_AN_ERROR,
@@ -29,4 +31,9 @@ enum class LoginResult {
     SET_SOCKET_REUSE,
 };
 
-#endif //DRCOMJLUQT_CONSTANTS_H
+namespace LoginResultUtil
+{
+    QString ToQString(LoginResult r);
+}
+
+#endif //DRCOMJLUQT_LOGINRESULT_H

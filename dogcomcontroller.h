@@ -4,7 +4,7 @@
 #include <QApplication>
 #include <QObject>
 #include <memory>
-#include "constants.h"
+#include "loginresult.h"
 #include "dogcom.h"
 #include "interruptiblesleeper.h"
 

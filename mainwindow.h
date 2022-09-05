@@ -51,11 +51,11 @@ private slots:
     void on_checkBoxHideLoginWindow_toggled(bool checked);
 
 private:
-    void HandleOfflineUserLogout(const QString &string) const;
+    void HandleOfflineUserLogout() const;
 
     void HandleOfflineChallengeFailed(const QString &title);
 
-    void HandleOfflineTimeout(const QString &string);
+    void HandleOfflineTimeout();
 
 public slots:
 

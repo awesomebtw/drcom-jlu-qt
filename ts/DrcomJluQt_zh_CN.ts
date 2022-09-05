@@ -112,7 +112,7 @@
         <translation>退出(&amp;Q)</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="563"/>
+        <location filename="../mainwindow.cpp" line="515"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
@@ -133,143 +133,76 @@
         <translation>输入不能为空！</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="274"/>
+        <location filename="../mainwindow.cpp" line="273"/>
         <source>Illegal MAC address!</source>
         <translation>物理地址输入有误！</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="301"/>
+        <location filename="../mainwindow.cpp" line="300"/>
         <source>online</source>
         <translation>在线</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="306"/>
+        <location filename="../mainwindow.cpp" line="305"/>
         <source>offline</source>
         <translation>离线</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="346"/>
+        <location filename="../mainwindow.cpp" line="345"/>
         <source>Challenge failed.</source>
         <translation>尝试连接服务器失败，</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="346"/>
-        <location filename="../mainwindow.cpp" line="383"/>
+        <location filename="../mainwindow.cpp" line="345"/>
+        <location filename="../mainwindow.cpp" line="382"/>
         <source>Please check your connection.</source>
         <translation>请检查你的网络连接。</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="347"/>
-        <location filename="../mainwindow.cpp" line="386"/>
+        <location filename="../mainwindow.cpp" line="346"/>
+        <location filename="../mainwindow.cpp" line="385"/>
         <source>Note that you should connect to either wireless or wired network before starting the DrCOM client.</source>
         <translation>注意你需要先连上无线网或者插上网线再打开客户端。</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="349"/>
+        <location filename="../mainwindow.cpp" line="348"/>
         <source>If you have connected, you may restart DrCOM to solve the problem.</source>
         <translation>如果你已经连上了，重启一下客户端就可以登录成功了。</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="350"/>
-        <location filename="../mainwindow.cpp" line="389"/>
+        <location filename="../mainwindow.cpp" line="349"/>
+        <location filename="../mainwindow.cpp" line="388"/>
         <source>Restart DrCOM?</source>
         <translation>重启客户端吗？</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="383"/>
+        <location filename="../mainwindow.cpp" line="382"/>
         <source>Connection timed out.</source>
         <translation>连接超时。</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="384"/>
+        <location filename="../mainwindow.cpp" line="383"/>
         <source>The client will try to restart to solve some stability problems, which needs &quot;remember me&quot; option to be enabled.</source>
         <translation>该客户端会尝试自动重启并重新登录以解决一些不稳定老掉线的问题，若要启用该功能需勾选“记住我”。</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="388"/>
+        <location filename="../mainwindow.cpp" line="387"/>
         <source>You may be unable to login until you restart DrCOM.</source>
         <translation>如果你现在连上网但是不重启客户端就可能登录不上。</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="391"/>
-        <location filename="../mainwindow.cpp" line="403"/>
+        <location filename="../mainwindow.cpp" line="402"/>
         <source>Login failed</source>
         <translation>登录失败</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="404"/>
+        <location filename="../mainwindow.cpp" line="390"/>
+        <location filename="../mainwindow.cpp" line="403"/>
         <source>You have been offline</source>
         <translation>您已离线</translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="410"/>
-        <source>Binding port failed. Please check if there are other clients occupying the port.</source>
-        <translation>绑定端口失败，请检查是否有其他客户端占用了端口。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="417"/>
-        <source>Someone else is using this account, which cannot be used simultaneously.</source>
-        <translation>有人正在用这个账号，同一个账号不能同时登录。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="421"/>
-        <source>The server is busy. Please try again later.</source>
-        <translation>服务器繁忙，请稍后重试。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="424"/>
-        <source>Account and password does not match.</source>
-        <translation>账号密码不匹配。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="431"/>
-        <source>The cumulative time or traffic for this account has exceeded the limit.</source>
-        <translation>该账户的网络时长或者流量超限了。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="435"/>
-        <source>This account is suspended.</source>
-        <translation>该账号被冻结。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="441"/>
-        <source>IP address does not match.</source>
-        <translation>IP 地址不匹配。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="442"/>
-        <location filename="../mainwindow.cpp" line="449"/>
-        <location filename="../mainwindow.cpp" line="458"/>
-        <source>This account can only be logged in on computer(s) with specified IP and MAC addresses.</source>
-        <translation>该账号只能在特定物理地址和 IP 地址上的电脑登录。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="448"/>
-        <source>MAC address does not match.</source>
-        <translation>物理地址不匹配。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="452"/>
-        <source>This account has too many IP addresses.</source>
-        <translation>该账号的 IP 地址太多了。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="455"/>
-        <source>The client version is too old and needs an update.</source>
-        <translation>登录客户端版本太老了，请更新您的客户端。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="462"/>
-        <source>Your computer has a static IP address. Use DHCP instead and try again.</source>
-        <translation>你的电脑设置了静态 IP，请改为 DHCP 自动获取模式，然后重新登录。</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="470"/>
-        <source>Unknow reason</source>
-        <translation>未知错误</translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.cpp" line="528"/>
+        <location filename="../mainwindow.cpp" line="480"/>
         <source>Are you sure you want to log out?</source>
         <translation>确定要注销吗？</translation>
     </message>
@@ -285,6 +218,96 @@
         <location filename="../main.cpp" line="85"/>
         <source>DrCOM JLU Qt</source>
         <translation>吉大校园网客户端 Qt 版</translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <location filename="../loginresult.cpp" line="15"/>
+        <source>Binding port failed. Please check if there are other clients occupying the port.</source>
+        <translation>绑定端口失败，请检查是否有其他客户端占用了端口。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="17"/>
+        <source>Challenge failed.</source>
+        <translation>尝试连接服务器失败，</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="19"/>
+        <source>Someone else is using this account, which cannot be used simultaneously.</source>
+        <translation>有人正在用这个账号，同一个账号不能同时登录。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="21"/>
+        <source>The server is busy. Please try again later.</source>
+        <translation>服务器繁忙，请稍后重试。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="23"/>
+        <source>Account and password does not match.</source>
+        <translation>账号密码不匹配。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="25"/>
+        <source>The cumulative time or traffic for this account has exceeded the limit.</source>
+        <translation>该账户的网络时长或者流量超限了。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="27"/>
+        <source>This account is suspended.</source>
+        <translation>该账号被冻结。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="29"/>
+        <source>IP address does not match.</source>
+        <translation>IP 地址不匹配。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="30"/>
+        <location filename="../loginresult.cpp" line="33"/>
+        <location filename="../loginresult.cpp" line="39"/>
+        <source>This account can only be logged in on computer(s) with specified IP and MAC addresses.</source>
+        <translation>该账号只能在特定物理地址和 IP 地址上的电脑登录。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="32"/>
+        <source>MAC address does not match.</source>
+        <translation>物理地址不匹配。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="35"/>
+        <source>This account has too many IP addresses.</source>
+        <translation>该账号的 IP 地址太多了。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="37"/>
+        <source>The client version is too old and needs an update.</source>
+        <translation>登录客户端版本太老了，请更新您的客户端。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="41"/>
+        <source>Your computer has a static IP address. Use DHCP instead and try again.</source>
+        <translation>你的电脑设置了静态 IP，请改为 DHCP 自动获取模式，然后重新登录。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="43"/>
+        <source>Connection timed out.</source>
+        <translation>连接超时。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="45"/>
+        <source>Initialize Windows socket failed.</source>
+        <translation>Windows 初始化 socket 失败。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="49"/>
+        <source>Set up socket failed.</source>
+        <translation>设置 socket 失败。</translation>
+    </message>
+    <message>
+        <location filename="../loginresult.cpp" line="52"/>
+        <source>Unknown error.</source>
+        <translation>未知错误</translation>
     </message>
 </context>
 </TS>
