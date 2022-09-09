@@ -52,7 +52,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
 
     // put mac addresses to combobox
     for (const QNetworkInterface &i: QNetworkInterface::allInterfaces()) {
-        if (!i.flags().testFlag(QNetworkInterface::IsLoopBack)) {
+        if (i.type() != QNetworkInterface::InterfaceType::Loopback) {
             ui->comboBoxMAC->addItem(i.hardwareAddress() + " [" + i.humanReadableName() + ']', i.hardwareAddress());
         }
     }
@@ -170,6 +170,7 @@ void MainWindow::QuitDrcom()
         case State::ONLINE:
             dogcomController.LogOut(); // quit after logout
         case State::OFFLINE:
+            WriteInputs();
             currState = State::ABOUT_TO_QUIT;
             qApp->quit();
             break;
@@ -218,7 +219,6 @@ void MainWindow::LoadSettings()
     ui->lineEditAccount->setText(account);
     ui->lineEditPass->setText(password);
     SetMAC(macAddr);
-    ui->loginButton->setText(tr("Login"));
 
     ui->checkBoxRemember->setCheckState(Utils::BooleanToCheckState(remember));
     ui->checkBoxAutoLogin->setCheckState(Utils::BooleanToCheckState(autoLogin));
@@ -390,8 +390,6 @@ void MainWindow::HandleOfflineTimeout()
     if (QMessageBox::question(this, tr("You have been offline"), boxText) == QMessageBox::StandardButton::Yes) {
         qDebug() << "Restart DrCOM confirmed in case OfflineReason::TIMEOUT";
         RestartDrcomByUser();
-    } else {
-        dogcomController.LogOut(); // if not restart, must log out to release socket
     }
 }
 

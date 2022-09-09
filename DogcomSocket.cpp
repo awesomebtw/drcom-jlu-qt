@@ -62,13 +62,11 @@ void DogcomSocket::init()
     timeout.tv_sec = 3;
     timeout.tv_usec = 0;
 #endif
-    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout,
-                   sizeof(timeout)) < 0) {
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof(timeout)) < 0) {
 #ifdef WIN32
         throw DogcomSocketException(DogcomError::SET_SOCK_OPT_TIMEOUT, WSAGetLastError());
 #else
-        throw DogcomSocketException(DogcomError::SET_SOCK_OPT_TIMEOUT,
-                sockfd);
+        throw DogcomSocketException(DogcomError::SET_SOCK_OPT_TIMEOUT, sockfd);
 #endif
     }
 

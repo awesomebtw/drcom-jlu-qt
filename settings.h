@@ -6,9 +6,10 @@
 #define DRCOMJLUQT_SETTINGS_H
 
 #include <QSettings>
-#include <QString>
+#include <QObject>
 
-class DrcomUserSettings {
+class DrcomUserSettings : public QObject {
+    Q_OBJECT
 private:
     QSettings s;
     DrcomUserSettings();

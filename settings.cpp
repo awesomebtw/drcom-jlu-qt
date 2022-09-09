@@ -11,14 +11,14 @@ const QString ID_PASSWORD = "password";
 const QString ID_MAC = "mac";
 const QString ID_REMEMBER = "remember";
 const QString ID_AUTO_LOGIN = "autoLogin";
-const QString ID_HIDE_WINDOW = "showWindow";
+const QString ID_HIDE_WINDOW = "hideWindow";
 const QString ID_NOT_SHOW_WELCOME = "dontShowWelcome";
 const QString ID_RESTART_TIMES = "restartTimes";
 const QString ID_MAIN_WINDOW_GEOMETRY = "mainWindowGeometry";
 
 const QByteArray emptyByteArray;
 
-DrcomUserSettings::DrcomUserSettings() : s(SETTINGS_FILE_NAME, QSettings::IniFormat) {}
+DrcomUserSettings::DrcomUserSettings() : s(SETTINGS_FILE_NAME, QSettings::IniFormat, this) {}
 
 DrcomUserSettings &DrcomUserSettings::Instance()
 {
