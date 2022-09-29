@@ -1,4 +1,5 @@
 ﻿#include <QDir>
+#include <QLibraryInfo>
 #include <QMessageBox>
 #include <QSystemSemaphore>
 #include <QSharedMemory>
@@ -47,6 +48,11 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
 
+    // translate dialogue buttons
+    QTranslator baseTranslator;
+    (void) baseTranslator.load("qtbase_zh_CN", QLibraryInfo::path(QLibraryInfo::TranslationsPath));
+    QApplication::installTranslator(&baseTranslator);
+
     QTranslator translator;
     (void) translator.load(":/ts/DrComJluQt_zh_CN.qm");
     QApplication::installTranslator(&translator);
@@ -58,7 +64,7 @@ int main(int argc, char *argv[])
     // in linux / unix shared memory is not freed when the application terminates abnormally,
     // so you need to get rid of the garbage
     QSharedMemory nix_fix_shared_memory("DrcomQtSharedMemory");
-    if (nix_fix_shared_memory.attach()){
+    if (nix_fix_shared_memory.attach()) {
         nix_fix_shared_memory.detach();
     }
 #endif
