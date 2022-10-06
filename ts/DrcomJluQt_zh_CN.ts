@@ -216,7 +216,7 @@
     </message>
     <message>
         <location filename="../main.cpp" line="85"/>
-        <source>DrCOM JLU Qt</source>
+        <source>DrCOM Qt Client for JLU</source>
         <translation>吉大校园网客户端 Qt 版</translation>
     </message>
 </context>

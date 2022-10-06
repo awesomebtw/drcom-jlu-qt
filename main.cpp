@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     semaphore.release();
 
     QApplication::setApplicationName("DrcomJluQt");
-    QApplication::setApplicationDisplayName(QApplication::tr("DrCOM JLU Qt"));
+    QApplication::setApplicationDisplayName(QApplication::tr("DrCOM Qt Client for JLU"));
     QApplication::setApplicationVersion("1.0.1");
     QApplication::setQuitOnLastWindowClosed(false);
 
