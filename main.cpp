@@ -50,12 +50,15 @@ int main(int argc, char *argv[])
 
     // translate dialogue buttons
     QTranslator baseTranslator;
-    (void) baseTranslator.load("qtbase_zh_CN", QLibraryInfo::path(QLibraryInfo::TranslationsPath));
-    QApplication::installTranslator(&baseTranslator);
+    if (baseTranslator.load(QLocale::system(), "qtbase", "_", QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+        QApplication::installTranslator(&baseTranslator);
+    }
 
     QTranslator translator;
-    (void) translator.load(":/ts/DrComJluQt_zh_CN.qm");
-    QApplication::installTranslator(&translator);
+    if (translator.load(QLocale::system(), "DrcomJluQt", "_", ":/ts")) {
+        QApplication::installTranslator(&translator);
+    }
+    QTranslator qtTranslator;
 
     QSystemSemaphore semaphore("DrcomQtSem", 1);  // create semaphore
     semaphore.acquire(); // Raise the semaphore, barring other instances to work with shared memory
