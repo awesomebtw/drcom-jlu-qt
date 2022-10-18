@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
     if (translator.load(QLocale::system(), "DrcomJluQt", "_", ":/ts")) {
         QApplication::installTranslator(&translator);
     }
-    QTranslator qtTranslator;
 
     QSystemSemaphore semaphore("DrcomQtSem", 1);  // create semaphore
     semaphore.acquire(); // Raise the semaphore, barring other instances to work with shared memory

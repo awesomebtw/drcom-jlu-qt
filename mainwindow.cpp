@@ -107,6 +107,7 @@ MainWindow::MainWindow(QApplication *parentApp, QWidget *parent) :
 
     LoadSettings(); // 读取配置文件
     logOutAction->setEnabled(false); // 尚未登录不可注销
+    QApplication::setQuitOnLastWindowClosed(true);
 
     // 自动登录功能
     if (DrcomUserSettings::Instance().SelfRestartCount() > 0 || DrcomUserSettings::Instance().AutoLogin()) {
@@ -426,6 +427,7 @@ void MainWindow::HandleOffline(LoginResult reason)
     SetIcon(false);
     // 禁用注销按钮
     logOutAction->setEnabled(false);
+    QApplication::setQuitOnLastWindowClosed(true);
     ui->centralStackedWidget->setCurrentIndex(NOT_LOGGED_IN_PAGE_INDEX);
     // 显示出窗口
     ShowLoginWindow();
@@ -453,6 +455,7 @@ void MainWindow::HandleLoggedIn()
     SetIcon(true);
     // 启用注销按钮
     logOutAction->setEnabled(true);
+    QApplication::setQuitOnLastWindowClosed(false);
 
     ui->centralStackedWidget->setCurrentIndex(LOGGED_IN_PAGE_INDEX);
 
@@ -488,6 +491,7 @@ void MainWindow::UserLogOut()
     restoreAction->activate(restoreAction->Trigger);
     // 禁用注销按钮
     logOutAction->setEnabled(false);
+    QApplication::setQuitOnLastWindowClosed(true);
 
     // switch to logged-out panel
     ui->centralStackedWidget->setCurrentIndex(NOT_LOGGED_IN_PAGE_INDEX);
