@@ -21,30 +21,28 @@
 static thread_local std::mt19937 gen{std::random_device().operator()()};
 static thread_local std::uniform_int_distribution dist{0, 127};
 
-DogCom::DogCom(InterruptibleSleeper *s)
-{
+DogCom::DogCom(InterruptibleSleeper *s) {
     sleeper = s;
     log = true;
 }
 
-void DogCom::Stop()
-{
+void DogCom::Stop() {
     sleeper->Interrupt();
 }
 
-void DogCom::FillConfig(QString a, QString p, const QString &m)
-{
+void DogCom::FillConfig(QString a, QString p, const QString &m) {
     account = std::move(a);
     password = std::move(p);
 
     // 将 QString 转换为 MAC
-    std::sscanf(m.toLocal8Bit().data(), "%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX",
-                &macBinary[0], &macBinary[1], &macBinary[2],
-                &macBinary[3], &macBinary[4], &macBinary[5]);
+    std::sscanf(
+            m.toLocal8Bit().data(), "%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX%*c%hhX",
+            &macBinary[0], &macBinary[1], &macBinary[2],
+            &macBinary[3], &macBinary[4], &macBinary[5]
+    );
 }
 
-void DogCom::PrintPacket(const char msg[], const unsigned char *packet, size_t length) const
-{
+void DogCom::PrintPacket(const char msg[], const unsigned char *packet, size_t length) const {
     if (!log)
         return;
     QString x;
@@ -54,8 +52,7 @@ void DogCom::PrintPacket(const char msg[], const unsigned char *packet, size_t l
     qDebug("%s %s", msg, x.toStdString().c_str());
 }
 
-void DogCom::run()
-{
+void DogCom::run() {
     // 每一个ReportOffline后边都跟着一个return语句，防止程序逻辑混乱
     qDebug() << Qt::endl;
     qDebug() << "Starting dogcom...";
@@ -133,8 +130,7 @@ void DogCom::run()
     }
 }
 
-bool DogCom::DhcpChallenge(DogcomSocket &socket, unsigned char seed[])
-{
+bool DogCom::DhcpChallenge(DogcomSocket &socket, unsigned char seed[]) {
     constexpr size_t CHALLENGE_PACKET_LEN = 20, RECV_PACKET_LEN = 1024;
 
     qDebug() << "Begin dhcp challenge...";
@@ -185,8 +181,7 @@ enum LoginErrorCode {
     LOGIN_MUST_USE_DHCP = 0x17
 };
 
-LoginResult DogCom::DhcpLogin(DogcomSocket &socket, unsigned char seed[], unsigned char auth_information[])
-{
+LoginResult DogCom::DhcpLogin(DogcomSocket &socket, unsigned char seed[], unsigned char auth_information[]) {
     size_t length_padding = 0;
     size_t JLU_padding = 0;
 
@@ -384,8 +379,7 @@ LoginResult DogCom::DhcpLogin(DogcomSocket &socket, unsigned char seed[], unsign
     return LoginResult::NOT_AN_ERROR;
 }
 
-int DogCom::Keepalive1(DogcomSocket &socket, unsigned char auth_information[])
-{
+int DogCom::Keepalive1(DogcomSocket &socket, unsigned char auth_information[]) {
     unsigned char keepalive_1_packet1[8] = {0x07, 0x01, 0x08, 0x00, 0x01, 0x00, 0x00, 0x00};
     unsigned char recv_packet1[1024]{}, keepalive_1_packet2[38]{}, recv_packet2[1024]{};
 
@@ -444,8 +438,7 @@ int DogCom::Keepalive1(DogcomSocket &socket, unsigned char auth_information[])
     return 0;
 }
 
-int DogCom::Keepalive2(DogcomSocket &socket, int &keepalive_counter, int &first)
-{
+int DogCom::Keepalive2(DogcomSocket &socket, int &keepalive_counter, int &first) {
     unsigned char keepalive_2_packet[40]{}, recv_packet[1024]{}, tail[4]{};
 
     if (first) {
@@ -534,8 +527,7 @@ int DogCom::Keepalive2(DogcomSocket &socket, int &keepalive_counter, int &first)
     return 0;
 }
 
-void DogCom::GenCrc(unsigned char seed[], int encrypt_type, unsigned char crc[])
-{
+void DogCom::GenCrc(unsigned char seed[], int encrypt_type, unsigned char crc[]) {
     if (encrypt_type == 0) {
         char DRCOM_DIAL_EXT_PROTO_CRC_INIT[4] = {(char) 0xc7, (char) 0x2f, (char) 0x31, (char) 0x01};
         char gencrc_tmp[4] = {0x7e};
@@ -581,8 +573,7 @@ void DogCom::GenCrc(unsigned char seed[], int encrypt_type, unsigned char crc[])
 }
 
 void
-DogCom::Keepalive2PacketBuilder(unsigned char keepalive_2_packet[], int keepalive_counter, int filepacket, int type)
-{
+DogCom::Keepalive2PacketBuilder(unsigned char keepalive_2_packet[], int keepalive_counter, int filepacket, int type) {
     keepalive_2_packet[0] = 0x07;
     keepalive_2_packet[1] = keepalive_counter;
     keepalive_2_packet[2] = 0x28;
